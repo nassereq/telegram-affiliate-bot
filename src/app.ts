@@ -20,8 +20,8 @@ try {
 const bot = telegramService.getBot();
 const imageAnalyzer = new ImageAnalyzer();
 
-// Comando /start
-bot.start((ctx) => {
+// Comando /start e /s (atalho)
+const startHandler = (ctx: Context) => {
   const userId = ctx.from?.id;
   if (userId) {
     sessionManager.startSession(userId);
@@ -35,7 +35,10 @@ bot.start((ctx) => {
       "💡 Use /cancelar para cancelar a operação atual",
     { parse_mode: "Markdown" }
   );
-});
+};
+
+bot.start(startHandler);
+bot.command("s", startHandler);
 
 // Comando /cancelar
 bot.command("cancelar", (ctx) => {
