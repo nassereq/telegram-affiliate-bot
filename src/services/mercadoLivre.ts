@@ -94,66 +94,85 @@ export class MercadoLivreService {
         $('meta[property="og:title"]').attr("content") ||
         "";
 
-      // Extrair todos os preços da página
-      const allPrices = $("span.andes-money-amount__fraction")
-        .map((i, el) => $(el).text().trim())
-        .get()
-        .filter(price => price && price.length <= 6 && parseInt(price.replace(/\D/g, "")) >= 100); // Preços >= R$ 100
-
-      console.log("📊 Preços encontrados:", allPrices);
-
-      // Extrair preço com desconto (preço atual)
-      let discountPrice = "";
+      // Extrair porcentagem de desconto PRIMEIRO (sempre correto)
+      let discountPercentage = "";
+      const discountElement = $("span.andes-money-amount__discount, [class*='discount']").first();
+      const discountText = discountElement.text().trim();
       
-      // Buscar especificamente o preço principal (maior destaque na página)
-      const mainPrice = $(".ui-pdp-price__main-container span.andes-money-amount__fraction").first().text().trim();
-      
-      if (mainPrice && parseInt(mainPrice.replace(/\D/g, "")) >= 100) {
-        discountPrice = mainPrice;
-      } else if (allPrices.length > 0) {
-        // Fallback: pegar o menor preço válido (>= 100)
-        const prices = allPrices.map(p => parseInt(p.replace(/\D/g, "")));
-        const minPrice = Math.min(...prices);
-        discountPrice = allPrices.find(p => parseInt(p.replace(/\D/g, "")) === minPrice) || allPrices[0];
-      }
-
-      // Extrair preço original (se houver)
-      let originalPrice = "";
-      
-      // Tentar buscar preço riscado primeiro
-      const strikedPrice = $("s span.andes-money-amount__fraction, s.andes-money-amount--previous .andes-money-amount__fraction").first().text().trim();
-      
-      if (strikedPrice && strikedPrice.length <= 6 && parseInt(strikedPrice.replace(/\D/g, "")) >= 100) {
-        // Preço válido (até 6 dígitos e >= R$ 100)
-        originalPrice = strikedPrice;
-      } else if (allPrices.length >= 2) {
-        // Se múltiplos preços, o maior é o original
-        const prices = allPrices.map(p => parseInt(p.replace(/\D/g, "")));
-        const maxPrice = Math.max(...prices);
-        originalPrice = allPrices.find(p => parseInt(p.replace(/\D/g, "")) === maxPrice) || "";
-      }
-
-      // Extrair porcentagem de desconto
-      let discountPercentage =
-        $("span.andes-money-amount__discount").text().trim() ||
-        $('[class*="discount"]').first().text().trim() ||
-        "";
-      
-      // Extrair apenas o primeiro número seguido de % (ex: "42% OFF no Pix..." -> "42%")
-      const percentMatch = discountPercentage.match(/(\d+)%/);
+      const percentMatch = discountText.match(/(\d+)%/);
       discountPercentage = percentMatch ? `${percentMatch[1]}%` : "";
       
-      // Remover se não encontrou porcentagem válida
-      if (!discountPercentage || discountPercentage === "0%") {
-        discountPercentage = "";
-      }
+      console.log("🔥 Desconto encontrado:", discountPercentage);
 
-      // Extrair imagem principal
-      let imageUrl =
-        $("figure.ui-pdp-gallery__figure img").first().attr("src") ||
-        $("img.ui-pdp-image").first().attr("src") ||
-        $('meta[property="og:image"]').attr("content") ||
-        "";
+      // Extrair preços
+      let discountPrice = "";
+      let originalPrice = "";
+      
+      // Buscar todos os preços válidos na página
+      const allPriceElements = $("span.andes-money-amount__fraction");
+      const validPrices: string[] = [];
+      
+      allPriceElements.each((i, el) => {
+        const price = $(el).text().trim();
+        const numPrice = parseInt(price.replace(/\D/g, ""));
+        // Aceitar qualquer preço válido (sem restrição de valor mínimo)
+        if (price && price.length <= 6 && numPrice > 0) {
+          validPrices.push(price);
+        }
+      });
+      
+      console.log("💵 Todos os preços válidos:", validPrices);
+      
+      if (discountPercentage && validPrices.length >= 2) {
+        // Se tem desconto, primeiro preço é promocional, segundo ou maior é original
+        discountPrice = validPrices[0];
+        
+        // Buscar preço riscado primeiro
+        const strikedPrice = $("s span.andes-money-amount__fraction, s.andes-money-amount--previous .andes-money-amount__fraction").first().text().trim();
+        if (strikedPrice && validPrices.includes(strikedPrice)) {
+          originalPrice = strikedPrice;
+        } else {
+          // Pegar o maior preço que não seja o promocional
+          const prices = validPrices.map(p => parseInt(p.replace(/\D/g, "")));
+          const maxPrice = Math.max(...prices);
+          originalPrice = validPrices.find(p => parseInt(p.replace(/\D/g, "")) === maxPrice && p !== discountPrice) || validPrices[1];
+        }
+      } else if (validPrices.length > 0) {
+        // Sem desconto, pegar o primeiro preço válido
+        discountPrice = validPrices[0];
+      }
+      
+      console.log("💰 Preços finais - De:", originalPrice, "Por:", discountPrice);
+
+      // Extrair imagem principal (a maior imagem do produto)
+      let imageUrl = "";
+      
+      // Prioridade 1: Imagem da galeria principal (maior qualidade)
+      const galleryImg = $("figure.ui-pdp-gallery__figure img, .ui-pdp-gallery img").first().attr("data-src") || 
+                         $("figure.ui-pdp-gallery__figure img, .ui-pdp-gallery img").first().attr("src");
+      
+      // Prioridade 2: Imagem do produto direto
+      const productImg = $("img.ui-pdp-image").first().attr("src");
+      
+      // Prioridade 3: Meta tag Open Graph
+      const ogImage = $('meta[property="og:image"]').attr("content");
+      
+      imageUrl = galleryImg || productImg || ogImage || "";
+      
+      // Remover imagens placeholder/loading (data:image)
+      if (imageUrl && imageUrl.startsWith("data:image")) {
+        // Tentar pegar outra imagem válida
+        const allImages = $("img[src*='mlstatic.com']").toArray();
+        for (const img of allImages) {
+          const src = $(img).attr("src");
+          if (src && !src.startsWith("data:image") && src.includes("mlstatic.com")) {
+            imageUrl = src;
+            break;
+          }
+        }
+      }
+      
+      console.log("🖼️ Imagem capturada:", imageUrl);
 
       // Limpar e formatar valores
       title = title.replace(/\n/g, " ").trim();
