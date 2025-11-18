@@ -8,6 +8,7 @@ export interface ProductData {
   imageUrl?: string;
   coupon?: string;
   couponDiscount?: string;
+  couponMinValue?: string;
 }
 
 // Anúncio formatado para o Telegram

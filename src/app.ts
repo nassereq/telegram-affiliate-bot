@@ -252,34 +252,49 @@ bot.on("text", async (ctx) => {
     else if (
       originalText === originalText.toUpperCase() && 
       originalText.length >= 3 && 
-      /^[A-Z0-9]+(\s+\d+)?$/.test(originalText)
+      /^[A-Z0-9]+(\s+\d+)?(\s+MIN\s+\d+)?$/.test(originalText)
     ) {
       // Adicionar cupom diretamente
       if (session.productData) {
-        // Separar código do cupom e porcentagem (se houver)
-        const couponParts = originalText.split(/\s+/);
-        const couponCode = couponParts[0];
-        const couponDiscount = couponParts[1] || null;
+        // Separar código do cupom, porcentagem e valor mínimo
+        const couponMatch = originalText.match(/^([A-Z0-9]+)(\s+(\d+))?(\s+MIN\s+(\d+))?$/);
+        
+        if (couponMatch) {
+          const couponCode = couponMatch[1];
+          const couponDiscount = couponMatch[3] || null;
+          const couponMinValue = couponMatch[5] || null;
 
-        session.productData.coupon = couponCode;
-        session.productData.couponDiscount = couponDiscount || undefined;
+          session.productData.coupon = couponCode;
+          session.productData.couponDiscount = couponDiscount || undefined;
+          session.productData.couponMinValue = couponMinValue || undefined;
 
-        // Formatar anúncio com cupom
-        const ad = formatProductAd(session.productData);
+          // Formatar anúncio com cupom
+          const ad = formatProductAd(session.productData);
 
-        await ctx.replyWithPhoto(
-          { url: session.productData.imageUrl || "" },
-          {
-            caption:
-              `✅ *Cupom adicionado: ${couponCode}${couponDiscount ? ` (+${couponDiscount}% de desconto)` : ''}*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
-            parse_mode: "Markdown",
+          let confirmationText = `✅ *Cupom adicionado: ${couponCode}`;
+          if (couponDiscount) {
+            confirmationText += ` (+${couponDiscount}% de desconto`;
+            if (couponMinValue) {
+              confirmationText += ` para compras acima de R$${couponMinValue}`;
+            }
+            confirmationText += `)`;
           }
-        );
+          confirmationText += `*`;
 
-        // Continuar em waiting_confirmation
-        sessionManager.updateSession(userId, {
-          step: "waiting_confirmation",
-        });
+          await ctx.replyWithPhoto(
+            { url: session.productData.imageUrl || "" },
+            {
+              caption:
+                `${confirmationText}\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
+              parse_mode: "Markdown",
+            }
+          );
+
+          // Continuar em waiting_confirmation
+          sessionManager.updateSession(userId, {
+            step: "waiting_confirmation",
+          });
+        }
       }
     } else {
       await ctx.reply("❓ Responda com *SIM*, *NAO*, *AJUSTAR* ou digite um cupom em MAIÚSCULAS.", {

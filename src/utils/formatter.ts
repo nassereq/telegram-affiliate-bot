@@ -30,14 +30,19 @@ export function formatProductAd(product: ProductData): Ad {
 
   // Adiciona cupom se existir
   if (product.coupon) {
-    text += `\n${emoji.coupon} CUPOM: ${product.coupon}`;
+    text += `\n${emoji.coupon} CUPOM: ${product.coupon}\n`;
     
     // Adiciona desconto adicional do cupom se existir
     if (product.couponDiscount) {
-      text += ` (+${product.couponDiscount}% de desconto)`;
+      text += `(+${product.couponDiscount}% de desconto`;
+      
+      // Adiciona valor mínimo se existir
+      if (product.couponMinValue) {
+        text += ` para compras acima de R$${product.couponMinValue}`;
+      }
+      
+      text += `)\n`;
     }
-    
-    text += `\n`;
   }
 
   // Link do produto
