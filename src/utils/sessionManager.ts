@@ -1,7 +1,7 @@
 import { ProductData } from "../types";
 
 interface UserSession {
-  step: "waiting_product_link" | "waiting_confirmation" | "waiting_manual_edit";
+  step: "waiting_product_link" | "waiting_confirmation" | "waiting_manual_edit" | "waiting_coupon";
   productData?: ProductData;
   productUrl?: string;
   timestamp: number;

@@ -20,6 +20,55 @@ try {
 const bot = telegramService.getBot();
 const imageAnalyzer = new ImageAnalyzer();
 
+// 🔒 Lista de usuários autorizados (User IDs do Telegram)
+const AUTHORIZED_USERS = [
+  "VovoVania", // @VovoVania
+  // Adicione os User IDs numéricos aqui após obter com /getid
+];
+
+// Middleware de autorização
+bot.use(async (ctx, next) => {
+  const userId = ctx.from?.id;
+  const username = ctx.from?.username;
+
+  // Verificar se o usuário está autorizado
+  const isAuthorized =
+    (username && AUTHORIZED_USERS.includes(username)) ||
+    (userId && AUTHORIZED_USERS.includes(userId.toString()));
+
+  if (!isAuthorized) {
+    console.log(`🚫 Acesso negado - User: ${username || userId}`);
+    await ctx.reply(
+      "🚫 *Acesso negado.*\n\nEste bot é privado e só responde a usuários autorizados.",
+      { parse_mode: "Markdown" }
+    );
+    return; // Não prossegue para os próximos handlers
+  }
+
+  // Usuário autorizado, continuar
+  return next();
+});
+
+// Comando /getid - Para descobrir o User ID
+bot.command("getid", (ctx) => {
+  const userId = ctx.from?.id;
+  const username = ctx.from?.username;
+  const firstName = ctx.from?.first_name;
+  const chatId = ctx.chat?.id;
+  const chatType = ctx.chat?.type;
+  
+  ctx.reply(
+    `👤 *Suas informações:*\n\n` +
+    `🆔 User ID: \`${userId}\`\n` +
+    `👤 Username: ${username ? `@${username}` : "Não definido"}\n` +
+    `📛 Nome: ${firstName || "Não definido"}\n\n` +
+    `💬 *Informações do Chat:*\n` +
+    `🆔 Chat ID: \`${chatId}\`\n` +
+    `📂 Tipo: ${chatType}`,
+    { parse_mode: "Markdown" }
+  );
+});
+
 // Comando /start e /s (atalho)
 const startHandler = (ctx: Context) => {
   const userId = ctx.from?.id;
@@ -86,9 +135,15 @@ bot.on("text", async (ctx) => {
 
       try {
         // FAZER SCRAPING DA PÁGINA
-        const productDetails = await mercadoLivreService.scrapeProductDetails(text);
+        const productDetails = await mercadoLivreService.scrapeProductDetails(
+          text
+        );
 
-        if (productDetails && productDetails.title && productDetails.discountPrice) {
+        if (
+          productDetails &&
+          productDetails.title &&
+          productDetails.discountPrice
+        ) {
           // Criar ProductData com link de afiliado
           const productData = {
             ...productDetails,
@@ -107,7 +162,7 @@ bot.on("text", async (ctx) => {
 
           // Mostrar preview e pedir confirmação
           await ctx.reply(
-            `✅ *Produto analisado!*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
+            `✅ *Produto analisado!*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar\n\n💡 _Ou digite um cupom em MAIÚSCULAS (ex: VALEPROMO)_`,
             { parse_mode: "Markdown" }
           );
         } else {
@@ -134,6 +189,7 @@ bot.on("text", async (ctx) => {
   // Se está aguardando confirmação
   else if (session.step === "waiting_confirmation") {
     const response = text.trim().toLowerCase();
+    const originalText = text.trim();
 
     if (response === "sim" || response === "s" || response === "yes") {
       if (session.productData) {
@@ -143,10 +199,7 @@ bot.on("text", async (ctx) => {
         const ad = formatProductAd(session.productData);
 
         // Enviar anúncio para o canal
-        const success = await telegramService.sendAd(
-          ad,
-          APP_CONFIG.chatId
-        );
+        const success = await telegramService.sendAd(ad, APP_CONFIG.chatId);
 
         if (success) {
           await ctx.reply(
@@ -163,26 +216,106 @@ bot.on("text", async (ctx) => {
         sessionManager.clearSession(userId);
         sessionManager.startSession(userId);
       }
-    } else if (response === "ajustar" || response === "editar" || response === "edit") {
+    } else if (
+      response === "ajustar" ||
+      response === "editar" ||
+      response === "edit"
+    ) {
       // Modo de edição manual
-      const currentAd = session.productData ? formatProductAd(session.productData) : null;
-      
+      const currentAd = session.productData
+        ? formatProductAd(session.productData)
+        : null;
+
       if (currentAd) {
         sessionManager.updateSession(userId, {
-          step: "waiting_manual_edit"
+          step: "waiting_manual_edit",
         });
-        
+
         await ctx.reply(
           `✏️ *Modo de edição ativado!*\n\n📝 Copie, edite e cole o anúncio abaixo:\n\n${currentAd.text}\n\n👉 Envie o texto editado para publicar.`,
           { parse_mode: "Markdown" }
         );
       }
-    } else if (response === "nao" || response === "não" || response === "n" || response === "no") {
-      await ctx.reply("❌ Anúncio cancelado.\n\nEnvie outro link para criar novo anúncio.");
+    } else if (
+      response === "nao" ||
+      response === "não" ||
+      response === "n" ||
+      response === "no"
+    ) {
+      await ctx.reply(
+        "❌ Anúncio cancelado.\n\nEnvie outro link para criar novo anúncio."
+      );
       sessionManager.clearSession(userId);
       sessionManager.startSession(userId);
+    } 
+    // 🆕 Se digitar texto em MAIÚSCULAS (que não seja SIM/NAO/AJUSTAR), é um cupom
+    else if (
+      originalText === originalText.toUpperCase() && 
+      originalText.length >= 3 && 
+      /^[A-Z0-9]+(\s+\d+)?$/.test(originalText)
+    ) {
+      // Adicionar cupom diretamente
+      if (session.productData) {
+        // Separar código do cupom e porcentagem (se houver)
+        const couponParts = originalText.split(/\s+/);
+        const couponCode = couponParts[0];
+        const couponDiscount = couponParts[1] || null;
+
+        session.productData.coupon = couponCode;
+        session.productData.couponDiscount = couponDiscount || undefined;
+
+        // Formatar anúncio com cupom
+        const ad = formatProductAd(session.productData);
+
+        await ctx.replyWithPhoto(
+          { url: session.productData.imageUrl || "" },
+          {
+            caption:
+              `✅ *Cupom adicionado: ${couponCode}${couponDiscount ? ` (+${couponDiscount}% de desconto)` : ''}*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
+            parse_mode: "Markdown",
+          }
+        );
+
+        // Continuar em waiting_confirmation
+        sessionManager.updateSession(userId, {
+          step: "waiting_confirmation",
+        });
+      }
     } else {
-      await ctx.reply("❓ Responda com *SIM*, *NAO* ou *AJUSTAR*.", { parse_mode: "Markdown" });
+      await ctx.reply("❓ Responda com *SIM*, *NAO*, *AJUSTAR* ou digite um cupom em MAIÚSCULAS.", {
+        parse_mode: "Markdown",
+      });
+    }
+  }
+
+  // Se está aguardando cupom
+  else if (session.step === "waiting_coupon") {
+    const couponCode = text.trim().toUpperCase();
+
+    if (couponCode.length > 0 && session.productData) {
+      // Adicionar cupom aos dados do produto
+      session.productData.coupon = couponCode;
+
+      // Formatar anúncio com cupom
+      const ad = formatProductAd(session.productData);
+
+      await ctx.replyWithPhoto(
+        { url: session.productData.imageUrl || "" },
+        {
+          caption:
+            `✅ *Cupom adicionado!*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
+          parse_mode: "Markdown",
+        }
+      );
+
+      // Voltar para waiting_confirmation
+      sessionManager.updateSession(userId, {
+        step: "waiting_confirmation",
+      });
+    } else {
+      await ctx.reply(
+        "❌ Cupom inválido. Digite um código válido ou use /cancelar."
+      );
     }
   }
 
@@ -195,14 +328,11 @@ bot.on("text", async (ctx) => {
       const ad = {
         text: text,
         imageUrl: session.productData.imageUrl,
-        parseMode: undefined
+        parseMode: undefined,
       };
 
       // Enviar anúncio para o canal
-      const success = await telegramService.sendAd(
-        ad,
-        APP_CONFIG.chatId
-      );
+      const success = await telegramService.sendAd(ad, APP_CONFIG.chatId);
 
       if (success) {
         await ctx.reply(
@@ -219,7 +349,9 @@ bot.on("text", async (ctx) => {
       sessionManager.clearSession(userId);
       sessionManager.startSession(userId);
     } else {
-      await ctx.reply("⚠️ Texto muito curto. Envie o anúncio completo editado.");
+      await ctx.reply(
+        "⚠️ Texto muito curto. Envie o anúncio completo editado."
+      );
     }
   }
 });

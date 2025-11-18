@@ -9,6 +9,7 @@ export function formatProductAd(product: ProductData): Ad {
     originalPrice: "❌",
     discountPrice: "✨",
     discount: "🔥",
+    coupon: "✔️",
     link: "🔗",
   };
 
@@ -25,6 +26,18 @@ export function formatProductAd(product: ProductData): Ad {
   // Adiciona porcentagem de desconto se existir
   if (product.discountPercentage) {
     text += `\n${emoji.discount} ${product.discountPercentage} OFF\n`;
+  }
+
+  // Adiciona cupom se existir
+  if (product.coupon) {
+    text += `\n${emoji.coupon} CUPOM: ${product.coupon}`;
+    
+    // Adiciona desconto adicional do cupom se existir
+    if (product.couponDiscount) {
+      text += ` (+${product.couponDiscount}% de desconto)`;
+    }
+    
+    text += `\n`;
   }
 
   // Link do produto

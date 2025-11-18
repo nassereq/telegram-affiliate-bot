@@ -6,6 +6,8 @@ export interface ProductData {
   discountPercentage?: string;
   url: string;
   imageUrl?: string;
+  coupon?: string;
+  couponDiscount?: string;
 }
 
 // Anúncio formatado para o Telegram

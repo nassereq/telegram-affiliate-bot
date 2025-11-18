@@ -68,6 +68,69 @@ export class MercadoLivreService {
   }
 
   /**
+   * Valida se os preços estão corretos usando a fórmula:
+   * PrecoOriginal × (1 - Desconto%) = PrecoComDesconto
+   * Com margem de erro de 5%
+   */
+  private validatePrices(
+    originalPrice: number,
+    discountPrice: number,
+    discountPercentage: number
+  ): boolean {
+    const expectedPrice = originalPrice * (1 - discountPercentage / 100);
+    const difference = Math.abs(expectedPrice - discountPrice);
+    const tolerance = discountPrice * 0.05; // 5% de margem de erro
+
+    const isValid = difference <= tolerance;
+
+    console.log("🧮 Validação matemática:");
+    console.log(`  Original: R$ ${originalPrice}`);
+    console.log(`  Desconto: ${discountPercentage}%`);
+    console.log(`  Esperado: R$ ${expectedPrice.toFixed(2)}`);
+    console.log(`  Encontrado: R$ ${discountPrice}`);
+    console.log(
+      `  Diferença: R$ ${difference.toFixed(
+        2
+      )} (tolerância: R$ ${tolerance.toFixed(2)})`
+    );
+    console.log(`  ✓ Válido: ${isValid ? "SIM" : "NÃO"}`);
+
+    return isValid;
+  }
+
+  /**
+   * Encontra a melhor combinação de preços que satisfaz a equação do desconto
+   */
+  private findValidPriceCombination(
+    prices: number[],
+    discountPercentage: number
+  ): { original: number; discount: number } | null {
+    // Ordenar preços (menor para maior)
+    const sortedPrices = [...prices].sort((a, b) => a - b);
+
+    // Testar todas as combinações possíveis
+    for (let i = 0; i < sortedPrices.length; i++) {
+      const discountPrice = sortedPrices[i];
+
+      for (let j = i + 1; j < sortedPrices.length; j++) {
+        const originalPrice = sortedPrices[j];
+
+        if (
+          this.validatePrices(originalPrice, discountPrice, discountPercentage)
+        ) {
+          console.log(
+            `✅ Combinação válida encontrada: R$ ${originalPrice} → R$ ${discountPrice}`
+          );
+          return { original: originalPrice, discount: discountPrice };
+        }
+      }
+    }
+
+    console.log("❌ Nenhuma combinação válida encontrada");
+    return null;
+  }
+
+  /**
    * Faz scraping da página do produto para extrair informações
    */
   async scrapeProductDetails(url: string): Promise<ProductDetails | null> {
@@ -85,9 +148,14 @@ export class MercadoLivreService {
       });
 
       const html = response.data as string;
-      const $ = cheerio.load(html);
-
-      // Extrair título
+      
+      // 🆕 DEBUG: Salvar HTML em arquivo
+      const fs = require('fs');
+      const debugPath = 'C:\\Users\\capis\\0_anuncios\\telegram-affiliate-bot\\debug_ml.html';
+      fs.writeFileSync(debugPath, html, 'utf8');
+      console.log(`\n📄 HTML salvo em: ${debugPath}\n`);
+      
+      const $ = cheerio.load(html);      // Extrair título
       let title =
         $("h1.ui-pdp-title").text().trim() ||
         $('[class*="ui-pdp-title"]').text().trim() ||
@@ -96,114 +164,142 @@ export class MercadoLivreService {
 
       // Extrair porcentagem de desconto PRIMEIRO (sempre correto)
       let discountPercentage = "";
-      const discountElement = $("span.andes-money-amount__discount, [class*='discount']").first();
+      const discountElement = $(
+        "span.andes-money-amount__discount, [class*='discount']"
+      ).first();
       const discountText = discountElement.text().trim();
-      
+
       const percentMatch = discountText.match(/(\d+)%/);
+      const discountPercent = percentMatch ? parseInt(percentMatch[1]) : 0;
       discountPercentage = percentMatch ? `${percentMatch[1]}%` : "";
-      
+
       console.log("🔥 Desconto encontrado:", discountPercentage);
 
-      // Extrair preços
-      let discountPrice = "";
-      let originalPrice = "";
+      // 🆕 NOVA EXTRAÇÃO: Usar estrutura correta do Mercado Livre
+      let originalPrice = 0;
+      let discountPrice = 0;
+
+      // 1. Preço anterior (original) - "previous price"
+      const previousPriceEl = $(
+        '[class*="previous"], [class*="andes-money-amount--previous"]'
+      )
+        .find("span.andes-money-amount__fraction")
+        .first();
       
-      // Buscar todos os preços válidos na página
-      const allPriceElements = $("span.andes-money-amount__fraction");
-      const validPrices: string[] = [];
-      
-      allPriceElements.each((i, el) => {
-        const price = $(el).text().trim();
-        const numPrice = parseInt(price.replace(/\D/g, ""));
-        // Aceitar qualquer preço válido (sem restrição de valor mínimo)
-        if (price && price.length <= 6 && numPrice > 0) {
-          validPrices.push(price);
-        }
-      });
-      
-      console.log("💵 Todos os preços válidos:", validPrices);
-      
-      if (discountPercentage && validPrices.length >= 2) {
-        // Se tem desconto, primeiro preço é promocional, segundo ou maior é original
-        discountPrice = validPrices[0];
-        
-        // Buscar preço riscado primeiro
-        const strikedPrice = $("s span.andes-money-amount__fraction, s.andes-money-amount--previous .andes-money-amount__fraction").first().text().trim();
-        if (strikedPrice && validPrices.includes(strikedPrice)) {
-          originalPrice = strikedPrice;
-        } else {
-          // Pegar o maior preço que não seja o promocional
-          const prices = validPrices.map(p => parseInt(p.replace(/\D/g, "")));
-          const maxPrice = Math.max(...prices);
-          originalPrice = validPrices.find(p => parseInt(p.replace(/\D/g, "")) === maxPrice && p !== discountPrice) || validPrices[1];
-        }
-      } else if (validPrices.length > 0) {
-        // Sem desconto, pegar o primeiro preço válido
-        discountPrice = validPrices[0];
+      if (previousPriceEl.length > 0) {
+        const priceText = previousPriceEl.text().trim().replace(/\./g, "");
+        originalPrice = parseInt(priceText) || 0;
+        console.log("💰 Preço anterior (previous):", originalPrice);
       }
+
+      // 2. Preço atual (com desconto) - "current price"
+      const currentPriceEl = $(
+        '[class*="current"], [class*="andes-money-amount--current"]'
+      )
+        .find("span.andes-money-amount__fraction")
+        .first();
       
-      console.log("💰 Preços finais - De:", originalPrice, "Por:", discountPrice);
+      if (currentPriceEl.length > 0) {
+        const priceText = currentPriceEl.text().trim().replace(/\./g, "");
+        discountPrice = parseInt(priceText) || 0;
+        console.log("💵 Preço atual (current):", discountPrice);
+      }
+
+      // 3. Fallback: buscar pelo contexto do desconto
+      if (originalPrice === 0 || discountPrice === 0) {
+        console.log("⚠️ Tentando extração alternativa por contexto...");
+
+        const discountParent = discountElement.parent().parent();
+        const pricesNearDiscount = discountParent.find(
+          "span.andes-money-amount__fraction"
+        );
+
+        if (pricesNearDiscount.length >= 2) {
+          const p1 = parseInt($(pricesNearDiscount[0]).text().trim().replace(/\./g, "")) || 0;
+          const p2 = parseInt($(pricesNearDiscount[1]).text().trim().replace(/\./g, "")) || 0;
+
+          originalPrice = Math.max(p1, p2);
+          discountPrice = Math.min(p1, p2);
+
+          console.log("💰 Extraído por contexto - Original:", originalPrice, "Desconto:", discountPrice);
+        }
+      }
+
+      // 4. Validação matemática
+      if (originalPrice > 0 && discountPrice > 0 && discountPercent > 0) {
+        const isValid = this.validatePrices(originalPrice, discountPrice, discountPercent);
+        console.log(isValid ? "✅ Preços validados!" : "⚠️ Preços não batem matematicamente");
+      }
+
+      console.log(
+        "💰 Preços finais - De: R$",
+        originalPrice,
+        "Por: R$",
+        discountPrice
+      );
 
       // Extrair imagem principal (a maior imagem do produto)
       let imageUrl = "";
-      
-      // Prioridade 1: Imagem da galeria principal (maior qualidade)
-      const galleryImg = $("figure.ui-pdp-gallery__figure img, .ui-pdp-gallery img").first().attr("data-src") || 
-                         $("figure.ui-pdp-gallery__figure img, .ui-pdp-gallery img").first().attr("src");
-      
-      // Prioridade 2: Imagem do produto direto
+
+      // Prioridade 1: Imagem PhotoSwipe (pswp_img) - melhor qualidade
+      const pswpImg = $("img.pswp_img").first();
+      const pswpSrc = pswpImg.attr("src") || pswpImg.attr("data-src");
+
+      // Prioridade 2: Imagem da galeria principal
+      const galleryImg =
+        $("figure.ui-pdp-gallery__figure img, .ui-pdp-gallery img")
+          .first()
+          .attr("data-src") ||
+        $("figure.ui-pdp-gallery__figure img, .ui-pdp-gallery img")
+          .first()
+          .attr("src");
+
+      // Prioridade 3: Imagem do produto direto
       const productImg = $("img.ui-pdp-image").first().attr("src");
-      
-      // Prioridade 3: Meta tag Open Graph
+
+      // Prioridade 4: Meta tag Open Graph
       const ogImage = $('meta[property="og:image"]').attr("content");
-      
-      imageUrl = galleryImg || productImg || ogImage || "";
-      
+
+      imageUrl = pswpSrc || galleryImg || productImg || ogImage || "";
+
       // Remover imagens placeholder/loading (data:image)
       if (imageUrl && imageUrl.startsWith("data:image")) {
-        // Tentar pegar outra imagem válida
         const allImages = $("img[src*='mlstatic.com']").toArray();
         for (const img of allImages) {
           const src = $(img).attr("src");
-          if (src && !src.startsWith("data:image") && src.includes("mlstatic.com")) {
+          if (
+            src &&
+            !src.startsWith("data:image") &&
+            src.includes("mlstatic.com")
+          ) {
             imageUrl = src;
             break;
           }
         }
       }
-      
+
       console.log("🖼️ Imagem capturada:", imageUrl);
 
       // Limpar e formatar valores
       title = title.replace(/\n/g, " ").trim();
-      
-      // Resumir título: extrair principais características
-      // Exemplo: "Smartphone Motorola Moto G05 - 128GB 12GB (...)" -> "Smartphone Motorola Moto G05 128GB"
       title = this.summarizeTitle(title);
-      
-      // Escapar caracteres especiais do Markdown
       title = title.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
-      discountPrice = discountPrice.replace(/\./g, "");
-      originalPrice = originalPrice.replace(/\./g, "");
 
-      // Adicionar "R$" se não tiver
-      if (discountPrice && !discountPrice.includes("R$")) {
-        discountPrice = `R$ ${discountPrice}`;
-      }
-      if (originalPrice && !originalPrice.includes("R$")) {
-        originalPrice = `R$ ${originalPrice}`;
-      }
+      // Formatar preços
+      const discountPriceStr = `R$ ${discountPrice}`;
+      const originalPriceStr =
+        originalPrice > 0 ? `R$ ${originalPrice}` : undefined;
 
       // Validar se extraiu dados mínimos
-      if (!title || !discountPrice) {
+      if (!title || discountPrice === 0) {
         console.error("❌ Dados insuficientes extraídos do HTML");
         return null;
       }
 
       const productDetails: ProductDetails = {
         title,
-        discountPrice,
-        originalPrice: originalPrice || undefined,
+        discountPrice: discountPriceStr,
+        originalPrice: originalPriceStr,
         discountPercentage: discountPercentage || undefined,
         imageUrl: imageUrl || undefined,
         url,
@@ -230,15 +326,15 @@ export class MercadoLivreService {
 
   /**
    * Resume o título do produto mantendo apenas as informações principais
-   * Exemplo: "Smartphone Motorola Moto G05 - 128GB 12GB (4GB RAM + 8GB Ram Boost)..." 
+   * Exemplo: "Smartphone Motorola Moto G05 - 128GB 12GB (4GB RAM + 8GB Ram Boost)..."
    * -> "Smartphone Motorola Moto G05 128GB"
    */
   private summarizeTitle(title: string): string {
     // Remover traços e parênteses com detalhes extras
     let summarized = title
-      .replace(/\s*-\s*/g, " ") // Remove traços
-      .replace(/\([^)]*\)/g, "") // Remove conteúdo entre parênteses
-      .replace(/\s+/g, " ") // Remove espaços múltiplos
+      .replace(/\s*-\s*/g, " ") // Removes hyphens
+      .replace(/\([^)]*\)/g, "") // Removes content within parentheses
+      .replace(/\s+/g, " ") // Removes multiple spaces
       .trim();
 
     // Extrair apenas: marca, modelo e capacidade principal
@@ -249,14 +345,17 @@ export class MercadoLivreService {
     // Manter até 6 palavras principais
     for (let i = 0; i < words.length && keywords.length < 6; i++) {
       const word = words[i];
-      
+
       // Ignorar palavras muito longas ou conectores
-      if (word.length > 20 || ["e", "com", "de", "da", "do"].includes(word.toLowerCase())) {
+      if (
+        word.length > 20 ||
+        ["e", "com", "de", "da", "do"].includes(word.toLowerCase())
+      ) {
         continue;
       }
-      
+
       keywords.push(word);
-      
+
       // Se encontrou capacidade (GB, TB), parar após próxima palavra
       if (/\d+(GB|TB|MB)/i.test(word)) {
         break;
