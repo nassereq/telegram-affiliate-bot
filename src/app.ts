@@ -30,18 +30,23 @@ const AUTHORIZED_USERS = [
 bot.use(async (ctx, next) => {
   const userId = ctx.from?.id;
   const username = ctx.from?.username;
+  const chatType = ctx.chat?.type;
 
-  // Verificar se o usuário está autorizado
+  // Permitir mensagens em canais sem verificação (o bot precisa poder postar)
+  if (chatType === "channel") {
+    return next();
+  }
+
+  // Verificar se o usuário está autorizado (apenas em conversas privadas/grupos)
   const isAuthorized =
     (username && AUTHORIZED_USERS.includes(username)) ||
     (userId && AUTHORIZED_USERS.includes(userId.toString()));
 
   if (!isAuthorized) {
-    console.log(`🚫 Acesso negado - User: ${username || userId}`);
-    await ctx.reply(
-      "🚫 *Acesso negado.*\n\nEste bot é privado e só responde a usuários autorizados.",
-      { parse_mode: "Markdown" }
+    console.log(
+      `🚫 Acesso negado - User: ${username || userId} (Chat: ${chatType})`
     );
+    // NÃO envia mensagem de bloqueio para não poluir o canal
     return; // Não prossegue para os próximos handlers
   }
 
@@ -56,15 +61,15 @@ bot.command("getid", (ctx) => {
   const firstName = ctx.from?.first_name;
   const chatId = ctx.chat?.id;
   const chatType = ctx.chat?.type;
-  
+
   ctx.reply(
     `👤 *Suas informações:*\n\n` +
-    `🆔 User ID: \`${userId}\`\n` +
-    `👤 Username: ${username ? `@${username}` : "Não definido"}\n` +
-    `📛 Nome: ${firstName || "Não definido"}\n\n` +
-    `💬 *Informações do Chat:*\n` +
-    `🆔 Chat ID: \`${chatId}\`\n` +
-    `📂 Tipo: ${chatType}`,
+      `🆔 User ID: \`${userId}\`\n` +
+      `👤 Username: ${username ? `@${username}` : "Não definido"}\n` +
+      `📛 Nome: ${firstName || "Não definido"}\n\n` +
+      `💬 *Informações do Chat:*\n` +
+      `🆔 Chat ID: \`${chatId}\`\n` +
+      `📂 Tipo: ${chatType}`,
     { parse_mode: "Markdown" }
   );
 });
@@ -130,13 +135,21 @@ bot.on("text", async (ctx) => {
   // Se está aguardando link do produto (COM afiliado)
   if (session.step === "waiting_product_link") {
     // Verificar se é URL do Mercado Livre
-    if (isValidUrl(text) && mercadoLivreService.isValidMercadoLivreUrl(text)) {
+    const lines = text.split("\n");
+    const urlLine = lines[0].trim();
+    const isFlashDeal =
+      lines.length > 1 && lines[1].trim().toLowerCase() === "off rel";
+
+    if (
+      isValidUrl(urlLine) &&
+      mercadoLivreService.isValidMercadoLivreUrl(urlLine)
+    ) {
       await ctx.reply("🔍 Analisando produto... aguarde.");
 
       try {
         // FAZER SCRAPING DA PÁGINA
         const productDetails = await mercadoLivreService.scrapeProductDetails(
-          text
+          urlLine
         );
 
         if (
@@ -147,7 +160,8 @@ bot.on("text", async (ctx) => {
           // Criar ProductData com link de afiliado
           const productData = {
             ...productDetails,
-            url: text, // Link de afiliado enviado pelo usuário
+            url: urlLine, // Link de afiliado enviado pelo usuário
+            isFlashDeal: isFlashDeal,
           };
 
           // Formatar anúncio
@@ -247,22 +261,24 @@ bot.on("text", async (ctx) => {
       );
       sessionManager.clearSession(userId);
       sessionManager.startSession(userId);
-    } 
+    }
     // 🆕 Se digitar texto em MAIÚSCULAS (que não seja SIM/NAO/AJUSTAR), é um cupom
     else if (
-      originalText === originalText.toUpperCase() && 
-      originalText.length >= 3 && 
-      /^[A-Z0-9]+(\s+\d+)?(\s+MIN\s+\d+)?$/.test(originalText)
+      originalText === originalText.toUpperCase() &&
+      originalText.length >= 3 &&
+      /^[A-Z0-9]+(\s+\d+)?(\s+(MIN|M)\s+\d+)?$/.test(originalText)
     ) {
       // Adicionar cupom diretamente
       if (session.productData) {
         // Separar código do cupom, porcentagem e valor mínimo
-        const couponMatch = originalText.match(/^([A-Z0-9]+)(\s+(\d+))?(\s+MIN\s+(\d+))?$/);
-        
+        const couponMatch = originalText.match(
+          /^([A-Z0-9]+)(\s+(\d+))?(\s+(MIN|M)\s+(\d+))?$/
+        );
+
         if (couponMatch) {
           const couponCode = couponMatch[1];
           const couponDiscount = couponMatch[3] || null;
-          const couponMinValue = couponMatch[5] || null;
+          const couponMinValue = couponMatch[6] || null;
 
           session.productData.coupon = couponCode;
           session.productData.couponDiscount = couponDiscount || undefined;
@@ -284,8 +300,7 @@ bot.on("text", async (ctx) => {
           await ctx.replyWithPhoto(
             { url: session.productData.imageUrl || "" },
             {
-              caption:
-                `${confirmationText}\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
+              caption: `${confirmationText}\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
               parse_mode: "Markdown",
             }
           );
@@ -297,9 +312,12 @@ bot.on("text", async (ctx) => {
         }
       }
     } else {
-      await ctx.reply("❓ Responda com *SIM*, *NAO*, *AJUSTAR* ou digite um cupom em MAIÚSCULAS.", {
-        parse_mode: "Markdown",
-      });
+      await ctx.reply(
+        "❓ Responda com *SIM*, *NAO*, *AJUSTAR* ou digite um cupom em MAIÚSCULAS.",
+        {
+          parse_mode: "Markdown",
+        }
+      );
     }
   }
 
@@ -317,8 +335,7 @@ bot.on("text", async (ctx) => {
       await ctx.replyWithPhoto(
         { url: session.productData.imageUrl || "" },
         {
-          caption:
-            `✅ *Cupom adicionado!*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
+          caption: `✅ *Cupom adicionado!*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar`,
           parse_mode: "Markdown",
         }
       );

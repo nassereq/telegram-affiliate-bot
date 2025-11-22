@@ -9,6 +9,7 @@ export interface ProductData {
   coupon?: string;
   couponDiscount?: string;
   couponMinValue?: string;
+  isFlashDeal?: boolean;
 }
 
 // Anúncio formatado para o Telegram

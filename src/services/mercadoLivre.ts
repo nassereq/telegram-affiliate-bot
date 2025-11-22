@@ -148,14 +148,15 @@ export class MercadoLivreService {
       });
 
       const html = response.data as string;
-      
+
       // 🆕 DEBUG: Salvar HTML em arquivo
-      const fs = require('fs');
-      const debugPath = 'C:\\Users\\capis\\0_anuncios\\telegram-affiliate-bot\\debug_ml.html';
-      fs.writeFileSync(debugPath, html, 'utf8');
+      const fs = require("fs");
+      const debugPath =
+        "C:\\Users\\capis\\0_anuncios\\telegram-affiliate-bot\\debug_ml.html";
+      fs.writeFileSync(debugPath, html, "utf8");
       console.log(`\n📄 HTML salvo em: ${debugPath}\n`);
-      
-      const $ = cheerio.load(html);      // Extrair título
+
+      const $ = cheerio.load(html); // Extrair título
       let title =
         $("h1.ui-pdp-title").text().trim() ||
         $('[class*="ui-pdp-title"]').text().trim() ||
@@ -185,7 +186,7 @@ export class MercadoLivreService {
       )
         .find("span.andes-money-amount__fraction")
         .first();
-      
+
       if (previousPriceEl.length > 0) {
         const priceText = previousPriceEl.text().trim().replace(/\./g, "");
         originalPrice = parseInt(priceText) || 0;
@@ -198,7 +199,7 @@ export class MercadoLivreService {
       )
         .find("span.andes-money-amount__fraction")
         .first();
-      
+
       if (currentPriceEl.length > 0) {
         const priceText = currentPriceEl.text().trim().replace(/\./g, "");
         discountPrice = parseInt(priceText) || 0;
@@ -215,20 +216,39 @@ export class MercadoLivreService {
         );
 
         if (pricesNearDiscount.length >= 2) {
-          const p1 = parseInt($(pricesNearDiscount[0]).text().trim().replace(/\./g, "")) || 0;
-          const p2 = parseInt($(pricesNearDiscount[1]).text().trim().replace(/\./g, "")) || 0;
+          const p1 =
+            parseInt(
+              $(pricesNearDiscount[0]).text().trim().replace(/\./g, "")
+            ) || 0;
+          const p2 =
+            parseInt(
+              $(pricesNearDiscount[1]).text().trim().replace(/\./g, "")
+            ) || 0;
 
           originalPrice = Math.max(p1, p2);
           discountPrice = Math.min(p1, p2);
 
-          console.log("💰 Extraído por contexto - Original:", originalPrice, "Desconto:", discountPrice);
+          console.log(
+            "💰 Extraído por contexto - Original:",
+            originalPrice,
+            "Desconto:",
+            discountPrice
+          );
         }
       }
 
       // 4. Validação matemática
       if (originalPrice > 0 && discountPrice > 0 && discountPercent > 0) {
-        const isValid = this.validatePrices(originalPrice, discountPrice, discountPercent);
-        console.log(isValid ? "✅ Preços validados!" : "⚠️ Preços não batem matematicamente");
+        const isValid = this.validatePrices(
+          originalPrice,
+          discountPrice,
+          discountPercent
+        );
+        console.log(
+          isValid
+            ? "✅ Preços validados!"
+            : "⚠️ Preços não batem matematicamente"
+        );
       }
 
       console.log(
