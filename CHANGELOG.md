@@ -2,12 +2,110 @@
 
 ## 📋 Índice de Versões
 
-- [v3.0](#v30---22112025) - Atual
+- [v5.0](#v50---23112025) - Atual ⭐
+- [v4.0](#v40---23112025)
+- [v3.0](#v30---22112025)
 - [v2.2](#v22---18112025)
 - [v2.1](#v21---18112025)
 - [v2.0](#v20---17112025)
 - [v1.1](#v11---14112025)
 - [v1.0](#v10---14112025)
+
+---
+
+## v5.0 - 23/11/2025
+
+**Tag:** `v5.0` | **Commit:** `f394772` | **Branch:** `v.2`
+
+### 🚀 Arquitetura Multi-Plataforma
+
+#### ✨ Novas Funcionalidades
+
+- **Suporte a Amazon**: Scraper completo para produtos da Amazon
+  - Links encurtados: `amzn.to`, `a.co`
+  - Links completos: `amazon.com.br`, `amazon.com`
+  - Extração de preços, desconto e imagens
+  - Validação matemática de preços (±5%)
+
+- **Sistema de Detecção de Plataforma**: Gate automático por URL
+  - Detector identifica plataforma automaticamente
+  - Roteamento para scraper apropriado
+  - Facilita adição de novas plataformas
+
+- **Arquitetura Modular com Interfaces**:
+  - `IPlatformScraper`: Interface comum para todas as plataformas
+  - `PlatformDetector`: Classe para detecção automática
+  - `PlatformManager`: Gerenciador central de scrapers
+
+#### 🏗️ Estrutura de Pastas
+```
+src/platforms/
+├── IPlatformScraper.ts    # Interface base
+├── platformManager.ts      # Gerenciador central
+├── mercadolivre/
+│   └── scraper.ts         # Scraper do Mercado Livre
+└── amazon/
+    └── scraper.ts         # Scraper da Amazon
+```
+
+#### 🔧 Melhorias Técnicas
+
+- **Mercado Livre**: Movido para estrutura modular
+  - Implementa `IPlatformScraper`
+  - Mantém toda funcionalidade existente
+  - Classes CSS: `previous`/`current`
+  - Validação matemática preservada
+
+- **Amazon Scraper**: Novo sistema de extração
+  - Seletores CSS adaptados para estrutura da Amazon
+  - Suporte a múltiplos formatos de preço
+  - Extração de desconto percentual
+  - Prioridade de imagens: `landingImage` → `imgBlkFront` → `og:image`
+  - Debug HTML salvo em `debug_amazon.html`
+
+- **App.ts**: Atualizado para multi-plataforma
+  - Importa `platformManager` ao invés de `mercadoLivreService`
+  - Mensagens incluem lista de plataformas suportadas
+  - Erro específico para plataforma não suportada
+
+#### 📊 Estatísticas
+
+- **6 arquivos alterados**: 862 inserções, 23 deleções
+- **4 novos arquivos criados**
+
+#### 🎯 Plataformas Suportadas (v5.0)
+
+- ✅ **Mercado Livre** (todos os recursos)
+- ✅ **Amazon** (scraping completo)
+
+#### 💡 Facilita Expansão Futura
+
+A arquitetura modular permite adicionar novas plataformas facilmente:
+1. Criar classe que implementa `IPlatformScraper`
+2. Implementar métodos `isValidUrl()` e `scrapeProductDetails()`
+3. Registrar no `PlatformManager`
+
+---
+
+## v4.0 - 23/11/2025
+
+**Tag:** `v4.0` | **Commit:** `c686b12` | **Branch:** `v.2`
+
+### 📝 Documentação Completa
+
+#### ✨ Nova Funcionalidade
+
+- **CHANGELOG.md**: Documentação completa de todas as versões
+  - Histórico detalhado de funcionalidades (v1.0 → v4.0)
+  - Estatísticas de desenvolvimento
+  - Recursos principais consolidados
+  - Tecnologias utilizadas
+  - Notas de desenvolvimento e sugestões futuras
+
+#### 📊 Estatísticas
+
+- **2 arquivos alterados**: 362 inserções, 18 deleções
+- **1 novo arquivo criado**: CHANGELOG.md
 
 ---
 
