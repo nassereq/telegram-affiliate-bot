@@ -2,7 +2,7 @@ import { Telegraf, Context } from "telegraf";
 import { message } from "telegraf/filters";
 import telegramService from "./services/telegram";
 import ImageAnalyzer from "./services/imageAnalysis";
-import mercadoLivreService from "./services/mercadoLivre";
+import platformManager from "./platforms/platformManager";
 import sessionManager from "./utils/sessionManager";
 import { formatProductAd } from "./utils/formatter";
 import { isValidProductData, isValidUrl } from "./utils/validator";
@@ -81,11 +81,14 @@ const startHandler = (ctx: Context) => {
     sessionManager.startSession(userId);
   }
 
+  const platforms = platformManager.getSupportedPlatforms().join(", ");
+
   ctx.reply(
-    "👋 *Bem-vindo ao Bot de Anúncios do Mercado Livre!*\n\n" +
+    "👋 *Bem-vindo ao Bot de Anúncios Multi-Plataforma!*\n\n" +
       "📝 *Como usar:*\n\n" +
       "1️⃣ Envie o *link de afiliado* do produto\n" +
       "2️⃣ O bot fará scraping e postará automaticamente!\n\n" +
+      `🏪 *Plataformas suportadas:* ${platforms}\n\n` +
       "💡 Use /cancelar para cancelar a operação atual",
     { parse_mode: "Markdown" }
   );
@@ -134,32 +137,27 @@ bot.on("text", async (ctx) => {
 
   // Se está aguardando link do produto (COM afiliado)
   if (session.step === "waiting_product_link") {
-    // Verificar se é URL do Mercado Livre
+    // Verificar se é URL válida
     const lines = text.split("\n");
     const urlLine = lines[0].trim();
     const isFlashDeal =
       lines.length > 1 && lines[1].trim().toLowerCase() === "off rel";
 
-    if (
-      isValidUrl(urlLine) &&
-      mercadoLivreService.isValidMercadoLivreUrl(urlLine)
-    ) {
+    if (isValidUrl(urlLine) && platformManager.isValidUrl(urlLine)) {
       await ctx.reply("🔍 Analisando produto... aguarde.");
 
       try {
-        // FAZER SCRAPING DA PÁGINA
-        const productDetails = await mercadoLivreService.scrapeProductDetails(
-          urlLine
-        );
+        // FAZER SCRAPING DA PLATAFORMA DETECTADA
+        const scrapedData = await platformManager.scrapeProduct(urlLine);
 
-        if (
-          productDetails &&
-          productDetails.title &&
-          productDetails.discountPrice
-        ) {
+        if (scrapedData && scrapedData.title && scrapedData.discountPrice) {
           // Criar ProductData com link de afiliado
           const productData = {
-            ...productDetails,
+            title: scrapedData.title,
+            originalPrice: scrapedData.originalPrice,
+            discountPrice: scrapedData.discountPrice,
+            discountPercentage: scrapedData.discountPercentage,
+            imageUrl: scrapedData.imageUrl,
             url: urlLine, // Link de afiliado enviado pelo usuário
             isFlashDeal: isFlashDeal,
           };
@@ -176,7 +174,7 @@ bot.on("text", async (ctx) => {
 
           // Mostrar preview e pedir confirmação
           await ctx.reply(
-            `✅ *Produto analisado!*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar\n\n💡 _Ou digite um cupom em MAIÚSCULAS (ex: VALEPROMO)_`,
+            `✅ *Produto analisado!* (${scrapedData.platform})\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar\n\n💡 _Ou digite um cupom em MAIÚSCULAS (ex: VALEPROMO)_`,
             { parse_mode: "Markdown" }
           );
         } else {
@@ -189,13 +187,18 @@ bot.on("text", async (ctx) => {
       } catch (error) {
         console.error("❌ Erro ao processar link:", error);
         await ctx.reply(
-          "❌ Erro ao processar o link.\n\n📸 Tente enviar um *screenshot* do produto.",
+          `❌ Erro ao processar o link.\n\n🏪 Plataformas suportadas: ${platformManager
+            .getSupportedPlatforms()
+            .join(", ")}`,
           { parse_mode: "Markdown" }
         );
       }
     } else {
       await ctx.reply(
-        "❌ URL inválida.\n\nEnvie um link válido do Mercado Livre (com afiliado) ou screenshot do produto."
+        `❌ URL inválida ou plataforma não suportada.\n\n🏪 Plataformas disponíveis:\n${platformManager
+          .getSupportedPlatforms()
+          .map((p) => `• ${p}`)
+          .join("\n")}`
       );
     }
   }
