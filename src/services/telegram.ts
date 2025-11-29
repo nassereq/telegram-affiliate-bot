@@ -67,8 +67,17 @@ export class TelegramService {
    * Inicia o bot
    */
   async launch(): Promise<void> {
-    await this.bot.launch();
-    console.log("✅ Bot do Telegram iniciado!");
+    try {
+      console.log("🔗 Conectando ao Telegram...");
+      await this.bot.launch();
+      console.log("✅ Bot do Telegram iniciado!");
+    } catch (error: any) {
+      console.error("❌ Erro ao conectar ao Telegram:", error.message);
+      if (error.response) {
+        console.error("Resposta da API:", error.response);
+      }
+      throw error;
+    }
   }
 
   /**

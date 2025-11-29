@@ -2,8 +2,7 @@
 
 ## 📋 Índice de Versões
 
-- [v5.1](#v51---25112025) - Atual ⭐
-- [v5.0](#v50---23112025)
+- [v5.0](#v50---23112025) - Atual ⭐
 - [v4.0](#v40---23112025)
 - [v3.0](#v30---22112025)
 - [v2.2](#v22---18112025)
@@ -11,52 +10,6 @@
 - [v2.0](#v20---17112025)
 - [v1.1](#v11---14112025)
 - [v1.0](#v10---14112025)
-
----
-
-## v5.1 - 25/11/2025
-
-**Tag:** `v5.1` | **Branch:** `v.2`
-
-### 🚀 Melhorias de Scraping e UX
-
-#### ✨ Novas Funcionalidades
-
-- **Reutilização de Cupom com "mesmo"**
-
-  - Digite "mesmo" (minúsculas) para usar o último cupom aplicado
-  - Mantém código, desconto e valor mínimo do cupom anterior
-  - Exibe hint do último cupom disponível na confirmação
-
-- **Cálculo Automático de Desconto (Amazon)**
-
-  - Calcula percentual de OFF quando não encontrado no HTML
-  - Fórmula: `((De - Por) / De) * 100`
-  - Fallback inteligente para produtos sem badge de desconto
-
-- **Extração Aprimorada de Preços (Amazon)**
-  - Novo seletor: `span.a-size-small.aok-offscreen` para preço "De"
-  - Extração via `displayPrice` no JSON do HTML para preço "Por"
-  - Logs detalhados para debugging de preços
-
-#### 🔧 Melhorias Técnicas
-
-- **SessionManager expandido**:
-
-  - Campos `lastCoupon`, `lastCouponDiscount`, `lastCouponMinValue`
-  - Métodos `saveLastCoupon()` e `getLastCoupon()`
-  - Persistência de cupom entre anúncios na mesma sessão
-
-- **Validação de Preços Amazon**:
-  - Verificação de valores numéricos válidos
-  - Logs de fallback quando seletores falham
-  - Proteção contra cálculo de desconto inválido (Por > De)
-
-#### 📝 Arquivos Modificados
-
-- `src/app.ts`: Lógica de detecção "mesmo" e salvamento de cupom
-- `src/utils/sessionManager.ts`: Campos e métodos para último cupom
-- `src/platforms/amazon/scraper.ts`: Novos seletores e cálculo de desconto
 
 ---
 
