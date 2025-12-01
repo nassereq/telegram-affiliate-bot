@@ -30,3 +30,6 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Debug files
+debug_*.html
