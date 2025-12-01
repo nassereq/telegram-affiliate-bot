@@ -486,6 +486,13 @@ telegramService.launch().then(() => {
   console.log(`💬 Chat ID configurado: ${APP_CONFIG.chatId}`);
 });
 
+// Inicia servidor API (opcional)
+if (process.env.ENABLE_API_SERVER === "true") {
+  import("./server").then((module) => {
+    module.startApiServer();
+  });
+}
+
 // Tratamento de sinais para shutdown gracioso
 process.once("SIGINT", () => {
   console.log("\n⏹️  Parando bot...");
