@@ -2,7 +2,8 @@
 
 ## 📋 Índice de Versões
 
-- [v5.1](#v51---25112025) - Atual ⭐
+- [v6.0](#v60---01122025) - Atual ⭐
+- [v5.1](#v51---25112025)
 - [v5.0](#v50---23112025)
 - [v4.0](#v40---23112025)
 - [v3.0](#v30---22112025)
@@ -14,9 +15,29 @@
 
 ---
 
+## v6.0 - 01/12/2025
+
+**Tag:** `v6.0` | **Branch:** `v.4`
+
+### 🔧 Melhorias de Manutenção
+
+#### ✨ Novas Funcionalidades
+
+- **Ignorar Arquivos de Debug**
+  - Adicionado `debug_*.html` ao `.gitignore`
+  - Arquivos de debug não são mais commitados no repositório
+  - Mantém o repositório limpo e focado no código fonte
+
+#### 📝 Arquivos Modificados
+
+- `.gitignore`: Adicionado padrão para arquivos debug
+- Removidos `debug_amazon.html` e `debug_ml.html` do histórico
+
+---
+
 ## v5.1 - 25/11/2025
 
-**Tag:** `v5.1` | **Branch:** `v.2`
+**Tag:** `v5.1` | **Branch:** `v.3`
 
 ### 🚀 Melhorias de Scraping e UX
 
