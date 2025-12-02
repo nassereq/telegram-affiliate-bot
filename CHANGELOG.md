@@ -2,7 +2,8 @@
 
 ## 📋 Índice de Versões
 
-- [v6.0](#v60---01122025) - Atual ⭐
+- [v6.1](#v61---01122025) - Atual ⭐
+- [v6.0](#v60---01122025)
 - [v5.1](#v51---25112025)
 - [v5.0](#v50---23112025)
 - [v4.0](#v40---23112025)
@@ -12,6 +13,91 @@
 - [v2.0](#v20---17112025)
 - [v1.1](#v11---14112025)
 - [v1.0](#v10---14112025)
+
+---
+
+## v6.1 - 01/12/2025
+
+**Tag:** `v6.1` | **Branch:** `v.4`
+
+### 🤖 Módulo de Automação de Navegador
+
+#### ✨ Novas Funcionalidades
+
+- **BrowserAutomationService**
+  - Serviço completo para automação de navegador
+  - Métodos: `initializeBrowser`, `login`, `navigateTo`, `clickButton`, `waitFor`, `extractGeneratedLink`, `closeBrowser`
+  - Preparado para integração com Puppeteer/Playwright
+
+- **API REST para Automação**
+  - Servidor Express com rotas HTTP
+  - `POST /automation/generate-link` - Gera links através de automação
+  - `GET /automation/status` - Verifica status do serviço
+  - `GET /health` - Health check da API
+
+- **Sistema de Configuração**
+  - `automation.config.ts` com todas as configurações necessárias
+  - Validação automática de variáveis de ambiente
+  - Configurações de navegador, seletores CSS e credenciais
+
+- **Controller de Automação**
+  - `AutomationController` com fluxo completo de automação
+  - Tratamento robusto de erros
+  - Logs detalhados de cada etapa
+
+- **Servidor HTTP Opcional**
+  - Integrado ao app.ts principal
+  - Ativado via `ENABLE_API_SERVER=true`
+  - Não interfere no funcionamento do bot Telegram
+
+#### 📚 Documentação
+
+- **docs/automation.md**
+  - Guia completo de configuração
+  - Instruções de uso da API
+  - Fluxo detalhado de automação
+  - Troubleshooting e exemplos
+
+- **src/automation/README.md**
+  - Quick start guide
+  - Exemplos de código
+  - Guia de desenvolvimento
+
+#### 📝 Arquivos Criados
+
+- `src/services/browserAutomation.ts` - Serviço principal
+- `src/services/index.ts` - Índice de serviços
+- `src/controllers/automationController.ts` - Controller HTTP
+- `src/config/automation.config.ts` - Configurações
+- `src/server.ts` - Servidor Express
+- `docs/automation.md` - Documentação completa
+- `src/automation/README.md` - Guia rápido
+
+#### 🔧 Arquivos Modificados
+
+- `src/app.ts` - Integração com servidor API opcional
+- `package.json` - Dependências: express, puppeteer, @types/express
+- `.env.example` - Novas variáveis de ambiente para automação
+
+#### 🌐 Variáveis de Ambiente Adicionadas
+
+```env
+ENABLE_API_SERVER=true/false
+API_PORT=3000
+AUTOMATION_USERNAME=usuario
+AUTOMATION_PASSWORD=senha
+AUTOMATION_URL=https://site.com
+AUTOMATION_BUTTON_SELECTOR=#btn
+AUTOMATION_RESULT_SELECTOR=.link
+AUTOMATION_WAIT_SECONDS=3
+AUTOMATION_SESSION_COOKIE=session_id
+```
+
+#### 📊 Estatísticas
+
+- **10 arquivos criados**: ~900 linhas de código
+- **3 arquivos modificados**: app.ts, package.json, .env.example
+- **2 documentações**: automation.md, README.md
 
 ---
 
