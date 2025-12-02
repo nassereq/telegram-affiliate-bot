@@ -56,10 +56,9 @@ export class AutomationController {
       await this.automationService.waitFor(AUTOMATION_CONFIG.waitTime);
 
       // 6. Extrair link gerado
-      const generatedLink =
-        await this.automationService.extractGeneratedLink(
-          AUTOMATION_CONFIG.selectors.generatedLink
-        );
+      const generatedLink = await this.automationService.extractGeneratedLink(
+        AUTOMATION_CONFIG.selectors.generatedLink
+      );
 
       // 7. Fechar navegador
       await this.automationService.closeBrowser();

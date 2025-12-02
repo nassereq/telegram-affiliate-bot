@@ -12,8 +12,7 @@ export const AUTOMATION_CONFIG = {
     button: process.env.AUTOMATION_BUTTON_SELECTOR || "#generate-button",
 
     // Seletor do link gerado
-    generatedLink:
-      process.env.AUTOMATION_RESULT_SELECTOR || ".generated-link",
+    generatedLink: process.env.AUTOMATION_RESULT_SELECTOR || ".generated-link",
 
     // Seletores de login (se necessário)
     loginForm: {

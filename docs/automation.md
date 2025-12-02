@@ -112,15 +112,15 @@ GET http://localhost:3000/automation/status
 
 Adicione as seguintes variáveis ao arquivo `.env`:
 
-| Variável                      | Descrição                           | Exemplo                    | Obrigatório |
-| ----------------------------- | ----------------------------------- | -------------------------- | ----------- |
-| `AUTOMATION_USERNAME`         | Nome de usuário para login          | `usuario@email.com`        | ✅          |
-| `AUTOMATION_PASSWORD`         | Senha para login                    | `senha123`                 | ✅          |
-| `AUTOMATION_URL`              | URL do site de automação            | `https://site.com`         | ✅          |
-| `AUTOMATION_BUTTON_SELECTOR`  | Seletor CSS do botão                | `#generate-btn`            | ✅          |
-| `AUTOMATION_RESULT_SELECTOR`  | Seletor CSS do resultado            | `.generated-link`          | ✅          |
-| `AUTOMATION_WAIT_SECONDS`     | Tempo de espera (segundos)          | `3`                        | ❌          |
-| `AUTOMATION_SESSION_COOKIE`   | Nome do cookie de sessão (opcional) | `session_id`               | ❌          |
+| Variável                     | Descrição                           | Exemplo             | Obrigatório |
+| ---------------------------- | ----------------------------------- | ------------------- | ----------- |
+| `AUTOMATION_USERNAME`        | Nome de usuário para login          | `usuario@email.com` | ✅          |
+| `AUTOMATION_PASSWORD`        | Senha para login                    | `senha123`          | ✅          |
+| `AUTOMATION_URL`             | URL do site de automação            | `https://site.com`  | ✅          |
+| `AUTOMATION_BUTTON_SELECTOR` | Seletor CSS do botão                | `#generate-btn`     | ✅          |
+| `AUTOMATION_RESULT_SELECTOR` | Seletor CSS do resultado            | `.generated-link`   | ✅          |
+| `AUTOMATION_WAIT_SECONDS`    | Tempo de espera (segundos)          | `3`                 | ❌          |
+| `AUTOMATION_SESSION_COOKIE`  | Nome do cookie de sessão (opcional) | `session_id`        | ❌          |
 
 ### Exemplo de .env
 

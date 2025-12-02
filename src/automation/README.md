@@ -94,13 +94,13 @@ Consulte [docs/automation.md](../docs/automation.md) para:
 
 ```typescript
 class BrowserAutomationService {
-  async initializeBrowser(): Promise<void>
-  async login(username: string, password: string): Promise<void>
-  async navigateTo(url: string): Promise<void>
-  async clickButton(selector: string): Promise<void>
-  async waitFor(seconds: number): Promise<void>
-  async extractGeneratedLink(selector: string): Promise<string>
-  async closeBrowser(): Promise<void>
+  async initializeBrowser(): Promise<void>;
+  async login(username: string, password: string): Promise<void>;
+  async navigateTo(url: string): Promise<void>;
+  async clickButton(selector: string): Promise<void>;
+  async waitFor(seconds: number): Promise<void>;
+  async extractGeneratedLink(selector: string): Promise<string>;
+  async closeBrowser(): Promise<void>;
 }
 ```
 
