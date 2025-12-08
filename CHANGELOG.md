@@ -25,22 +25,26 @@
 #### ✨ Novas Funcionalidades
 
 - **BrowserAutomationService**
+
   - Serviço completo para automação de navegador
   - Métodos: `initializeBrowser`, `login`, `navigateTo`, `clickButton`, `waitFor`, `extractGeneratedLink`, `closeBrowser`
   - Preparado para integração com Puppeteer/Playwright
 
 - **API REST para Automação**
+
   - Servidor Express com rotas HTTP
   - `POST /automation/generate-link` - Gera links através de automação
   - `GET /automation/status` - Verifica status do serviço
   - `GET /health` - Health check da API
 
 - **Sistema de Configuração**
+
   - `automation.config.ts` com todas as configurações necessárias
   - Validação automática de variáveis de ambiente
   - Configurações de navegador, seletores CSS e credenciais
 
 - **Controller de Automação**
+
   - `AutomationController` com fluxo completo de automação
   - Tratamento robusto de erros
   - Logs detalhados de cada etapa
@@ -53,6 +57,7 @@
 #### 📚 Documentação
 
 - **docs/automation.md**
+
   - Guia completo de configuração
   - Instruções de uso da API
   - Fluxo detalhado de automação

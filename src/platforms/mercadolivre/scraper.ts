@@ -182,88 +182,108 @@ export class MercadoLivreScraper implements IPlatformScraper {
 
       console.log("🔥 Desconto encontrado:", discountPercentage);
 
-      // 🆕 NOVA EXTRAÇÃO: Usar estrutura correta do Mercado Livre
+      // 🆕 NOVA EXTRAÇÃO: Priorizar preço PIX (maior desconto)
       let originalPrice = 0;
       let discountPrice = 0;
+      const allPrices: number[] = [];
 
-      // 1. Preço anterior (original) - "previous price"
+      // 1. Extrair TODOS os preços da página
+      $("span.andes-money-amount__fraction").each((i, el) => {
+        const priceText = $(el).text().trim().replace(/\./g, "");
+        const price = parseInt(priceText) || 0;
+        if (price > 0 && price < 10000) {
+          allPrices.push(price);
+          console.log(`   💵 Preço encontrado: R$ ${price}`);
+        }
+      });
+
+      console.log("💰 Todos os preços encontrados:", allPrices);
+
+      // 2. Identificar preço original (com class "previous" ou riscado)
       const previousPriceEl = $(
-        '[class*="previous"], [class*="andes-money-amount--previous"]'
-      )
-        .find("span.andes-money-amount__fraction")
-        .first();
+        "span.andes-money-amount--previous .andes-money-amount__fraction, " +
+          "s .andes-money-amount__fraction"
+      ).first();
 
       if (previousPriceEl.length > 0) {
         const priceText = previousPriceEl.text().trim().replace(/\./g, "");
         originalPrice = parseInt(priceText) || 0;
-        console.log("💰 Preço anterior (previous):", originalPrice);
+        console.log("💰 Preço original (riscado):", originalPrice);
+      } else {
+        originalPrice = Math.max(...allPrices);
+        console.log("💰 Preço original (maior):", originalPrice);
       }
 
-      // 2. Preço atual (com desconto) - "current price"
-      const currentPriceEl = $(
-        '[class*="current"], [class*="andes-money-amount--current"]'
-      )
-        .find("span.andes-money-amount__fraction")
-        .first();
+      // 3. 🆕 BUSCAR PREÇO PIX - Múltiplas estratégias
+      let pixPrice = 0;
 
-      if (currentPriceEl.length > 0) {
-        const priceText = currentPriceEl.text().trim().replace(/\./g, "");
-        discountPrice = parseInt(priceText) || 0;
-        console.log("💵 Preço atual (current):", discountPrice);
-      }
+      // Estratégia 1: Buscar por atributo aria-label com "Pix"
+      $('span[aria-label*="Pix"], div[aria-label*="Pix"]').each((i, el) => {
+        const ariaLabel = $(el).attr("aria-label") || "";
+        const match = ariaLabel.match(/(\d+)\s*reais/);
+        if (match) {
+          const price = parseInt(match[1]);
+          if (price > 0 && price < originalPrice) {
+            pixPrice = price;
+            console.log("💳 Preço PIX (aria-label):", pixPrice);
+          }
+        }
+      });
 
-      // 3. Fallback: buscar pelo contexto do desconto
-      if (originalPrice === 0 || discountPrice === 0) {
-        console.log("⚠️ Tentando extração alternativa por contexto...");
-
-        const discountParent = discountElement.parent().parent();
-        const pricesNearDiscount = discountParent.find(
-          "span.andes-money-amount__fraction"
+      // Estratégia 2: Buscar estrutura ui-pdp-price__second-line
+      if (pixPrice === 0) {
+        $(".ui-pdp-price__second-line .andes-money-amount__fraction").each(
+          (i, el) => {
+            const priceText = $(el).text().trim().replace(/\./g, "");
+            const price = parseInt(priceText) || 0;
+            if (price > 0 && price < originalPrice) {
+              pixPrice = price;
+              console.log("💳 Preço PIX (second-line):", pixPrice);
+            }
+          }
         );
+      }
 
-        if (pricesNearDiscount.length >= 2) {
-          const p1 =
-            parseInt(
-              $(pricesNearDiscount[0]).text().trim().replace(/\./g, "")
-            ) || 0;
-          const p2 =
-            parseInt(
-              $(pricesNearDiscount[1]).text().trim().replace(/\./g, "")
-            ) || 0;
+      // Estratégia 3: Buscar todos os preços menores que o original e pegar o menor
+      if (pixPrice === 0) {
+        const lowerPrices = allPrices
+          .filter((p) => p < originalPrice && p > 0)
+          .sort((a, b) => a - b);
 
-          originalPrice = Math.max(p1, p2);
-          discountPrice = Math.min(p1, p2);
-
-          console.log(
-            "💰 Extraído por contexto - Original:",
-            originalPrice,
-            "Desconto:",
-            discountPrice
-          );
+        if (lowerPrices.length > 0) {
+          pixPrice = lowerPrices[0]; // Menor preço = geralmente é o PIX
+          console.log("💳 Preço PIX (menor preço):", pixPrice);
         }
       }
 
-      // 4. Validação matemática
-      if (originalPrice > 0 && discountPrice > 0 && discountPercent > 0) {
-        const isValid = this.validatePrices(
-          originalPrice,
-          discountPrice,
-          discountPercent
+      // 4. Definir preço final
+      if (pixPrice > 0) {
+        discountPrice = pixPrice;
+        console.log("✅ Usando preço PIX:", discountPrice);
+      } else {
+        const validPrices = allPrices.filter((p) => p < originalPrice && p > 0);
+        discountPrice = validPrices.length > 0 ? Math.min(...validPrices) : 0;
+        console.log("⚠️ Usando menor preço disponível:", discountPrice);
+      }
+
+      // 5. Recalcular desconto real
+      if (originalPrice > 0 && discountPrice > 0) {
+        const realDiscount = Math.round(
+          ((originalPrice - discountPrice) / originalPrice) * 100
         );
-        console.log(
-          isValid
-            ? "✅ Preços validados!"
-            : "⚠️ Preços não batem matematicamente"
-        );
+        discountPercentage = `${realDiscount}%`;
+        console.log("🔥 Desconto recalculado:", discountPercentage);
       }
 
       console.log(
-        "💰 Preços finais - De: R$",
+        "💰 RESULTADO FINAL - De: R$",
         originalPrice,
         "Por: R$",
-        discountPrice
+        discountPrice,
+        `(${discountPercentage})`
       );
 
+      // Montar objeto de retorno
       // Extrair imagem principal (a maior imagem do produto)
       let imageUrl = "";
 
