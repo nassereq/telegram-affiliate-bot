@@ -2,7 +2,8 @@
 
 ## 📋 Índice de Versões
 
-- [v6.1](#v61---01122025) - Atual ⭐
+- [v6.2](#v62---08122025) - Atual ⭐
+- [v6.1](#v61---01122025)
 - [v6.0](#v60---01122025)
 - [v5.1](#v51---25112025)
 - [v5.0](#v50---23112025)
@@ -13,6 +14,46 @@
 - [v2.0](#v20---17112025)
 - [v1.1](#v11---14112025)
 - [v1.0](#v10---14112025)
+
+---
+
+## v6.2 - 08/12/2025
+
+**Tag:** `v6.2` | **Branch:** `v.4`
+
+### 🔧 Melhorias no Scraper do Mercado Livre
+
+#### 🐛 Problema Identificado
+
+- **Preços PIX não eram capturados corretamente**
+  - Scraper capturava preço parcelado (ex: R$ 324) em vez do preço PIX (ex: R$ 294)
+  - HTML estático não contém preços dinâmicos carregados via JavaScript
+  - Preço PIX "294 reais com 90 centavos" só aparece após JS executar
+
+#### 🔍 Tentativas de Correção (v6.2)
+
+- Implementadas múltiplas estratégias de busca de preços PIX
+- Busca por `aria-label` contendo texto "Pix"
+- Busca por classe `ui-pdp-price__second-line`
+- Fallback para menor preço encontrado
+- Logs detalhados de todos os preços capturados
+
+#### ⚠️ Limitação Atual
+
+- **Axios captura HTML estático** antes do JavaScript executar
+- Preços dinâmicos (PIX) não aparecem no HTML inicial
+- **Solução necessária:** Implementar Puppeteer/Playwright (próxima versão)
+
+#### 📝 Arquivos Modificados
+
+- `src/platforms/mercadolivre/scraper.ts` - Múltiplas tentativas de capturar preço PIX
+- `CHANGELOG.md` - Documentação do problema e tentativas
+
+#### 💡 Próximos Passos (v6.3)
+
+- Implementar Puppeteer para capturar HTML completo (após JS)
+- Aguardar elementos específicos carregarem
+- Capturar preço PIX corretamente
 
 ---
 
