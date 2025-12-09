@@ -4,6 +4,7 @@ import { ProductData } from "../../types";
 import { IPlatformScraper } from "../IPlatformScraper";
 import * as fs from "fs";
 import * as path from "path";
+import puppeteer, { Browser, Page } from "puppeteer";
 
 export interface ProductDetails {
   title: string;
@@ -23,14 +24,14 @@ export class MercadoLivreScraper implements IPlatformScraper {
    * Exemplos:
    * - https://mercadolivre.com/sec/16HiNp3 -> extrai o código
    * - https://produto.mercadolivre.com.br/MLB-123456 -> MLB-123456
+   * - https://www.mercadolivre.com.br/.../p/MLB22504037 -> MLB22504037
    */
   extractProductId(url: string): string | null {
-    // Padrão: MLB-XXXXXXX ou código curto após /sec/
     const patterns = [
-      /MLB-\d+/,
-      /MLA-\d+/,
-      /\/sec\/([A-Za-z0-9]+)/,
-      /\/p\/([A-Z0-9-]+)/,
+      /\/p\/(MLB\d+)/i, // /p/MLB22504037
+      /MLB-?\d+/i, // MLB-123456 ou MLB123456
+      /MLA-?\d+/i, // MLA-123456
+      /\/sec\/([A-Za-z0-9]+)/, // /sec/1AMQzEa
     ];
 
     for (const pattern of patterns) {
@@ -41,22 +42,6 @@ export class MercadoLivreScraper implements IPlatformScraper {
     }
 
     return null;
-  }
-
-  /**
-   * Busca detalhes do produto na API do Mercado Livre (opcional)
-   * Nota: A API pública não requer autenticação para consultas básicas
-   */
-  async fetchProductDetails(productId: string): Promise<any> {
-    try {
-      const response = await axios.get(`${this.apiUrl}/items/${productId}`);
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Erro ao fazer scraping:", error.message);
-      throw new Error(
-        `Não foi possível extrair dados do produto: ${error.message}`
-      );
-    }
   }
 
   /**
@@ -137,229 +122,342 @@ export class MercadoLivreScraper implements IPlatformScraper {
   }
 
   /**
-   * Faz scraping da página do produto para extrair informações
+   * 🆕 ESTRATÉGIA: Apenas Puppeteer (API não está funcionando)
+   * Extrai todos os dados diretamente da página com Puppeteer
    */
   async scrapeProductDetails(url: string): Promise<ProductData> {
+    let browser;
     try {
       console.log("🔍 Iniciando scraping da URL:", url);
 
-      // Fazer requisição HTTP para obter o HTML
-      const response = await axios.get<string>(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-        },
-        timeout: 10000,
+      // 1️⃣ ABRIR NAVEGADOR E NAVEGAR
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
 
-      const html = response.data as string;
-
-      // 🆕 DEBUG: Salvar HTML em arquivo
-      const fs = require("fs");
-      const debugPath =
-        "C:\\Users\\capis\\0_anuncios\\telegram-affiliate-bot\\debug_ml.html";
-      fs.writeFileSync(debugPath, html, "utf8");
-      console.log(`\n📄 HTML salvo em: ${debugPath}\n`);
-
-      const $ = cheerio.load(html); // Extrair título
-      let title =
-        $("h1.ui-pdp-title").text().trim() ||
-        $('[class*="ui-pdp-title"]').text().trim() ||
-        $('meta[property="og:title"]').attr("content") ||
-        "";
-
-      // Extrair porcentagem de desconto PRIMEIRO (sempre correto)
-      let discountPercentage = "";
-      const discountElement = $(
-        "span.andes-money-amount__discount, [class*='discount']"
-      ).first();
-      const discountText = discountElement.text().trim();
-
-      const percentMatch = discountText.match(/(\d+)%/);
-      const discountPercent = percentMatch ? parseInt(percentMatch[1]) : 0;
-      discountPercentage = percentMatch ? `${percentMatch[1]}%` : "";
-
-      console.log("🔥 Desconto encontrado:", discountPercentage);
-
-      // 🆕 NOVA EXTRAÇÃO: Priorizar preço PIX (maior desconto)
-      let originalPrice = 0;
-      let discountPrice = 0;
-      const allPrices: number[] = [];
-
-      // 1. Extrair TODOS os preços da página
-      $("span.andes-money-amount__fraction").each((i, el) => {
-        const priceText = $(el).text().trim().replace(/\./g, "");
-        const price = parseInt(priceText) || 0;
-        if (price > 0 && price < 10000) {
-          allPrices.push(price);
-          console.log(`   💵 Preço encontrado: R$ ${price}`);
-        }
-      });
-
-      console.log("💰 Todos os preços encontrados:", allPrices);
-
-      // 2. Identificar preço original (com class "previous" ou riscado)
-      const previousPriceEl = $(
-        "span.andes-money-amount--previous .andes-money-amount__fraction, " +
-          "s .andes-money-amount__fraction"
-      ).first();
-
-      if (previousPriceEl.length > 0) {
-        const priceText = previousPriceEl.text().trim().replace(/\./g, "");
-        originalPrice = parseInt(priceText) || 0;
-        console.log("💰 Preço original (riscado):", originalPrice);
-      } else {
-        originalPrice = Math.max(...allPrices);
-        console.log("💰 Preço original (maior):", originalPrice);
-      }
-
-      // 3. 🆕 BUSCAR PREÇO PIX - Múltiplas estratégias
-      let pixPrice = 0;
-
-      // Estratégia 1: Buscar por atributo aria-label com "Pix"
-      $('span[aria-label*="Pix"], div[aria-label*="Pix"]').each((i, el) => {
-        const ariaLabel = $(el).attr("aria-label") || "";
-        const match = ariaLabel.match(/(\d+)\s*reais/);
-        if (match) {
-          const price = parseInt(match[1]);
-          if (price > 0 && price < originalPrice) {
-            pixPrice = price;
-            console.log("💳 Preço PIX (aria-label):", pixPrice);
-          }
-        }
-      });
-
-      // Estratégia 2: Buscar estrutura ui-pdp-price__second-line
-      if (pixPrice === 0) {
-        $(".ui-pdp-price__second-line .andes-money-amount__fraction").each(
-          (i, el) => {
-            const priceText = $(el).text().trim().replace(/\./g, "");
-            const price = parseInt(priceText) || 0;
-            if (price > 0 && price < originalPrice) {
-              pixPrice = price;
-              console.log("💳 Preço PIX (second-line):", pixPrice);
-            }
-          }
-        );
-      }
-
-      // Estratégia 3: Buscar todos os preços menores que o original e pegar o menor
-      if (pixPrice === 0) {
-        const lowerPrices = allPrices
-          .filter((p) => p < originalPrice && p > 0)
-          .sort((a, b) => a - b);
-
-        if (lowerPrices.length > 0) {
-          pixPrice = lowerPrices[0]; // Menor preço = geralmente é o PIX
-          console.log("💳 Preço PIX (menor preço):", pixPrice);
-        }
-      }
-
-      // 4. Definir preço final
-      if (pixPrice > 0) {
-        discountPrice = pixPrice;
-        console.log("✅ Usando preço PIX:", discountPrice);
-      } else {
-        const validPrices = allPrices.filter((p) => p < originalPrice && p > 0);
-        discountPrice = validPrices.length > 0 ? Math.min(...validPrices) : 0;
-        console.log("⚠️ Usando menor preço disponível:", discountPrice);
-      }
-
-      // 5. Recalcular desconto real
-      if (originalPrice > 0 && discountPrice > 0) {
-        const realDiscount = Math.round(
-          ((originalPrice - discountPrice) / originalPrice) * 100
-        );
-        discountPercentage = `${realDiscount}%`;
-        console.log("🔥 Desconto recalculado:", discountPercentage);
-      }
-
-      console.log(
-        "💰 RESULTADO FINAL - De: R$",
-        originalPrice,
-        "Por: R$",
-        discountPrice,
-        `(${discountPercentage})`
+      const page = await browser.newPage();
+      await page.setUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
       );
 
-      // Montar objeto de retorno
-      // Extrair imagem principal (a maior imagem do produto)
-      let imageUrl = "";
+      await page.goto(url, {
+        waitUntil: "networkidle2",
+        timeout: 30000,
+      });
 
-      // Prioridade 1: Imagem PhotoSwipe (pswp_img) - melhor qualidade
-      const pswpImg = $("img.pswp_img").first();
-      const pswpSrc = pswpImg.attr("src") || pswpImg.attr("data-src");
+      // 2️⃣ VERIFICAR SE É PÁGINA DE PERFIL AFILIADO
+      let finalUrl = page.url();
+      console.log("🔗 URL inicial:", url);
+      console.log("🔗 URL atual:", finalUrl);
 
-      // Prioridade 2: Imagem da galeria principal
-      const galleryImg =
-        $("figure.ui-pdp-gallery__figure img, .ui-pdp-gallery img")
-          .first()
-          .attr("data-src") ||
-        $("figure.ui-pdp-gallery__figure img, .ui-pdp-gallery img")
-          .first()
-          .attr("src");
+      if (finalUrl.includes("/social/") || finalUrl.includes("/sec/")) {
+        console.log("⚠️ Página de perfil/afiliado detectada, buscando link do produto...");
+        
+        await page.waitForSelector('a[href*="/p/MLB"], a[href*="MLB"]', { timeout: 5000 });
+        
+        const productLink = await page.evaluate(() => {
+          const link = 
+            // @ts-ignore
+            document.querySelector('a[href*="/p/MLB"]') ||
+            // @ts-ignore
+            document.querySelector('a[href*="MLB"]');
+          return link ? link.href : null;
+        });
 
-      // Prioridade 3: Imagem do produto direto
-      const productImg = $("img.ui-pdp-image").first().attr("src");
-
-      // Prioridade 4: Meta tag Open Graph
-      const ogImage = $('meta[property="og:image"]').attr("content");
-
-      imageUrl = pswpSrc || galleryImg || productImg || ogImage || "";
-
-      // Remover imagens placeholder/loading (data:image)
-      if (imageUrl && imageUrl.startsWith("data:image")) {
-        const allImages = $("img[src*='mlstatic.com']").toArray();
-        for (const img of allImages) {
-          const src = $(img).attr("src");
-          if (
-            src &&
-            !src.startsWith("data:image") &&
-            src.includes("mlstatic.com")
-          ) {
-            imageUrl = src;
-            break;
-          }
+        if (productLink) {
+          console.log("✅ Link do produto encontrado:", productLink);
+          await page.goto(productLink.split('#')[0].split('?')[0], {
+            waitUntil: "networkidle2",
+            timeout: 30000,
+          });
+          finalUrl = page.url();
+          console.log("🔗 Navegando para produto:", finalUrl);
         }
       }
 
-      console.log("🖼️ Imagem capturada:", imageUrl);
+      // 3️⃣ AGUARDAR ELEMENTOS CARREGAREM
+      await page.waitForSelector(".andes-money-amount__fraction", {
+        timeout: 10000,
+      });
+      await page.waitForTimeout(2000);
 
-      // Limpar e formatar valores
-      title = title.replace(/\n/g, " ").trim();
-      title = this.summarizeTitle(title);
-      title = title.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
+      // 4️⃣ EXTRAIR DADOS DA PÁGINA
+      const productData = await page.evaluate(() => {
+        // Título
+        const titleEl = 
+          // @ts-ignore
+          document.querySelector("h1.ui-pdp-title") ||
+          // @ts-ignore
+          document.querySelector('[class*="ui-pdp-title"]');
+        const title = titleEl ? titleEl.textContent.trim() : "";
 
-      // Formatar preços
-      const discountPriceStr = `R$ ${discountPrice}`;
-      const originalPriceStr =
-        originalPrice > 0 ? `R$ ${originalPrice}` : undefined;
+        // Preço original (riscado)
+        const originalPriceEl = 
+          // @ts-ignore
+          document.querySelector("s .andes-money-amount__fraction") ||
+          // @ts-ignore
+          document.querySelector(".andes-money-amount--previous .andes-money-amount__fraction");
+        const originalPrice = originalPriceEl 
+          ? parseInt(originalPriceEl.textContent.replace(/\D/g, "")) 
+          : 0;
 
-      // Validar se extraiu dados mínimos
-      if (!title || discountPrice === 0) {
-        console.error("❌ Dados insuficientes extraídos do HTML");
+        // BUSCAR PREÇOS APENAS NO CONTAINER DO PRODUTO (não recomendações)
+        const mainContainer = 
+          // @ts-ignore
+          document.querySelector(".ui-pdp-container") ||
+          // @ts-ignore
+          document.querySelector(".ui-pdp-price") ||
+          // @ts-ignore
+          document.querySelector("main");
+        
+        const prices: number[] = [];
+        
+        if (mainContainer) {
+          // @ts-ignore
+          const priceElements = mainContainer.querySelectorAll("span.andes-money-amount");
+          
+          priceElements.forEach((el: any) => {
+            const ariaLabel = el.getAttribute("aria-label") || "";
+            const match = ariaLabel.match(/(\d+)\s*reais(?:\s*com\s*(\d+)\s*centavos)?/i);
+            
+            if (match && !el.classList.contains("andes-money-amount--previous")) {
+              const reais = parseInt(match[1]);
+              const centavos = match[2] ? parseInt(match[2]) : 0;
+              const price = reais + centavos / 100;
+              if (price >= 10) {
+                prices.push(price);
+              }
+            }
+          });
+        }
+
+        // Preço PIX = menor preço do container principal
+        const pixPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
+        // Desconto
+        // @ts-ignore
+        const discountEl = document.querySelector(".andes-money-amount__discount");
+        const discountText = discountEl ? discountEl.textContent : "";
+        const discountMatch = discountText.match(/(\d+)%/);
+        const discount = discountMatch ? parseInt(discountMatch[1]) : 0;
+
+        // Imagem
+        const imgEl = 
+          // @ts-ignore
+          document.querySelector("img.ui-pdp-image") ||
+          // @ts-ignore
+          document.querySelector(".ui-pdp-gallery img") ||
+          // @ts-ignore
+          document.querySelector("img[src*='mlstatic']");
+        const imageUrl = imgEl ? imgEl.src : "";
+
+        return {
+          title,
+          originalPrice,
+          pixPrice,
+          discount,
+          imageUrl,
+          allPrices: prices,
+        };
+      });
+
+      console.log("📊 Dados extraídos:", productData);
+
+      // 5️⃣ VALIDAR E FORMATAR
+      if (!productData.title || productData.pixPrice === 0) {
         throw new Error("Não foi possível extrair dados mínimos do produto");
       }
 
-      const productData: ProductData = {
-        title,
-        discountPrice: discountPriceStr,
-        originalPrice: originalPriceStr,
-        discountPercentage: discountPercentage || undefined,
-        imageUrl: imageUrl || undefined,
-        url,
+      // Recalcular desconto se necessário
+      let discountPercentage = productData.discount;
+      if (productData.originalPrice > 0 && productData.pixPrice > 0) {
+        discountPercentage = Math.round(
+          ((productData.originalPrice - productData.pixPrice) / productData.originalPrice) * 100
+        );
+      }
+
+      console.log("💰 Preço original:", productData.originalPrice);
+      console.log("💳 Preço PIX:", productData.pixPrice);
+      console.log("🔥 Desconto:", discountPercentage + "%");
+
+      const result: ProductData = {
+        title: this.summarizeTitle(productData.title),
+        originalPrice:
+          productData.originalPrice > 0
+            ? `R$ ${productData.originalPrice.toFixed(2)}`
+            : undefined,
+        discountPrice: `R$ ${productData.pixPrice.toFixed(2)}`,
+        discountPercentage:
+          discountPercentage > 0 ? `${discountPercentage}%` : undefined,
+        imageUrl: productData.imageUrl || undefined,
+        url: finalUrl,
       };
 
-      console.log("✅ Scraping concluído:", productData);
-      return productData;
+      console.log("✅ Scraping concluído:", result);
+      return result;
     } catch (error: any) {
-      if (error.response) {
-        console.error("❌ Erro HTTP ao fazer scraping:", error.response.status);
-      } else {
-        console.error("❌ Erro ao fazer scraping:", error.message || error);
+      console.error("❌ Erro ao fazer scraping:", error.message);
+      throw new Error(`Erro ao fazer scraping: ${error.message}`);
+    } finally {
+      if (browser) {
+        await browser.close();
       }
-      throw new Error(`Erro ao fazer scraping: ${error.message || error}`);
+    }
+  }
+
+  /**
+   * 🌐 Busca dados do produto na API oficial do Mercado Livre
+   */
+  private async fetchProductFromAPI(productId: string): Promise<any> {
+    try {
+      const response = await axios.get(`${this.apiUrl}/items/${productId}`);
+      console.log("✅ Dados obtidos da API");
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Erro na API:", error.message);
+      throw new Error(`API falhou: ${error.message}`);
+    }
+  }
+
+  /**
+   * 💳 Busca APENAS o preço PIX usando Puppeteer (mais rápido)
+   */
+  private async fetchPixPriceWithPuppeteer(
+    productUrl: string
+  ): Promise<number | null> {
+    let browser;
+    try {
+      console.log("🔍 Buscando preço PIX com Puppeteer...");
+
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      });
+
+      const page = await browser.newPage();
+      await page.setUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      );
+
+      await page.goto(productUrl, {
+        waitUntil: "networkidle2",
+        timeout: 15000,
+      });
+
+      // Aguardar preços carregarem
+      await page.waitForSelector(".andes-money-amount__fraction", {
+        timeout: 5000,
+      });
+
+      // EXTRAIR TODOS OS PREÇOS (com centavos)
+      const prices: number[] = await page.evaluate(() => {
+        const priceElements = Array.from(
+          // @ts-ignore
+          document.querySelectorAll("span.andes-money-amount")
+        );
+
+        const validPrices: number[] = [];
+        priceElements.forEach((el: any) => {
+          const ariaLabel = el.getAttribute("aria-label") || "";
+          const match = ariaLabel.match(
+            /(\d+)\s*reais(?:\s*com\s*(\d+)\s*centavos)?/i
+          );
+
+          if (match) {
+            const reais = parseInt(match[1]);
+            const centavos = match[2] ? parseInt(match[2]) : 0;
+            const price = reais + centavos / 100;
+            if (price > 10) {
+              validPrices.push(price);
+            }
+          }
+        });
+
+        return validPrices;
+      });
+
+      console.log("💰 Preços encontrados:", prices);
+
+      if (prices.length === 0) {
+        console.log("⚠️ Nenhum preço encontrado com Puppeteer");
+        return null;
+      }
+
+      // MENOR PREÇO = PIX
+      const pixPrice = Math.min(...prices);
+      console.log("💳 Preço PIX selecionado:", pixPrice);
+
+      return pixPrice;
+    } catch (error: any) {
+      console.error("⚠️ Erro ao buscar preço PIX:", error.message);
+      return null; // Fallback: usar preço da API
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
+  }
+
+  /**
+   * 🔗 Extrai ID do produto seguindo redirects com Puppeteer
+   */
+  private async extractProductIdFromRedirect(
+    url: string
+  ): Promise<string | null> {
+    let browser;
+    try {
+      console.log("🌐 Abrindo navegador para seguir redirect...");
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      });
+      const page = await browser.newPage();
+      
+      await page.setUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      );
+
+      // Navegar e aguardar carregamento completo
+      await page.goto(url, { 
+        waitUntil: "networkidle2", 
+        timeout: 30000 
+      });
+      
+      // Aguardar mais tempo para JavaScript executar redirect
+      await page.waitForTimeout(3000);
+
+      const finalUrl = page.url();
+      console.log("🔗 URL após navegação:", finalUrl);
+      
+      // Se continua sendo /sec/, tentar extrair link do produto da página
+      if (finalUrl.includes("/sec/") || finalUrl.includes("/social/")) {
+        console.log("⚠️ Ainda em página intermediária, buscando link do produto...");
+        
+        // Tentar encontrar link do produto
+        const productLink = await page.evaluate(() => {
+          const link = 
+            // @ts-ignore
+            document.querySelector('a[href*="/p/MLB"]') ||
+            // @ts-ignore
+            document.querySelector('a[href*="MLB"]');
+          return link ? link.href : null;
+        });
+        
+        if (productLink) {
+          console.log("✅ Link do produto encontrado:", productLink);
+          return this.extractProductId(productLink);
+        }
+      }
+
+      return this.extractProductId(finalUrl);
+    } catch (error: any) {
+      console.error("❌ Erro ao seguir redirect:", error.message);
+      return null;
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
     }
   }
 
