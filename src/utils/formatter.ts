@@ -163,7 +163,7 @@ export function getCategoryEmoji(
   }
 
   // Emoji padrão se não encontrar categoria
-  return alternativeMode ? "🎁" : "🛍️";
+  return alternativeMode ? "🎁" : "⚡️";
 }
 
 /**

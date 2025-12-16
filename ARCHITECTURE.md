@@ -213,7 +213,7 @@ launch(): Promise<void>
 **Exemplo de Saída:**
 
 ```
-🛍️ Smartphone Motorola Moto g05
+⚡️ Smartphone Motorola Moto g05
 
 De ❌ R$ 999
 Por ✨ R$ 575

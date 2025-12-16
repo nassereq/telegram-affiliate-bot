@@ -22,7 +22,7 @@ const imageAnalyzer = new ImageAnalyzer();
 
 // 🔒 Lista de usuários autorizados (User IDs do Telegram)
 const AUTHORIZED_USERS = [
-  "VovoVania", // @VovoVania
+  "NascimentoClara", // @NascimentoClara
   // Adicione os User IDs numéricos aqui após obter com /getid
 ];
 

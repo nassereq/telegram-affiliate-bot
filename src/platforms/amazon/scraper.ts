@@ -51,26 +51,29 @@ export class AmazonScraper implements IPlatformScraper {
       title = title.replace(/\n/g, " ").trim();
       console.log("📝 Título encontrado:", title);
 
-      // 💰 EXTRAIR PREÇO ORIGINAL (De:) - buscar novo seletor
+      // 💰 EXTRAIR PREÇO ORIGINAL (De:) - buscar no texto que contém "De:"
       let originalPrice = "";
 
       console.log("\n🔍 Procurando preço original (De:)...");
-      const dePriceElement = $("span.a-size-small.aok-offscreen").first();
-      if (dePriceElement.length > 0) {
-        const priceText = dePriceElement.text().trim();
-        const match = priceText.match(/R\$\s*([\d.,]+)/);
-        if (match) {
-          originalPrice = `R$ ${match[1].replace(/\./g, "").split(",")[0]}`;
-          console.log(`💰 Preço original encontrado (De:): ${originalPrice}`);
-        } else {
-          console.log(
-            "⚠️ Texto encontrado para 'De:', mas não contém um preço válido:",
-            priceText
-          );
+
+      // Buscar todos os elementos .aok-offscreen e filtrar o que contém "De:"
+      let foundDe = false;
+      $("span.aok-offscreen").each((_, element) => {
+        const text = $(element).text().trim();
+        if (text.includes("De:") && text.includes("R$")) {
+          const match = text.match(/R\$\s*([\d.,]+)/);
+          if (match) {
+            originalPrice = `R$ ${match[1].replace(/\./g, "").split(",")[0]}`;
+            console.log(`💰 Preço original encontrado (De:): ${originalPrice}`);
+            foundDe = true;
+            return false; // break do loop
+          }
         }
-      } else {
+      });
+
+      if (!foundDe) {
         console.log(
-          "⚠️ Nenhum elemento encontrado para o preço 'De:' usando o novo seletor."
+          "⚠️ Preço 'De:' não encontrado nos elementos .aok-offscreen"
         );
       }
 

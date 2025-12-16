@@ -306,7 +306,7 @@ A arquitetura modular permite adicionar novas plataformas facilmente:
 
 - **Formatação de Anúncio**: Template com emojis
 
-  - 🛍️ Título
+  - ⚡️ Título
   - ❌ De: Preço original
   - ✨ Por: Preço com desconto
   - 🔥 OFF: Porcentagem
