@@ -7,6 +7,7 @@ import sessionManager from "./utils/sessionManager";
 import { formatProductAd } from "./utils/formatter";
 import { isValidProductData, isValidUrl } from "./utils/validator";
 import { APP_CONFIG, validateConfig } from "./config/config";
+import postQueueService from "./services/postQueue";
 
 // Valida configuração antes de iniciar
 try {
@@ -111,13 +112,128 @@ bot.help((ctx) => {
   ctx.reply(
     "❓ *Ajuda*\n\n" +
       "*Fluxo de criação de anúncio:*\n\n" +
-      "1. Envie o link de afiliado do produto (Mercado Livre)\n" +
+      "1. Envie o link de afiliado do produto\n" +
       "2. O bot fará scraping dos dados\n" +
-      "3. O bot postará automaticamente no canal\n\n" +
+      "3. Confirme com SIM para adicionar à fila\n" +
+      "4. Os anúncios serão postados automaticamente\n\n" +
       "*Comandos disponíveis:*\n" +
       "/start - Iniciar\n" +
+      "/fila - Ver fila de postagens\n" +
+      "/intervalo [min] - Configurar intervalo (ex: /intervalo 15)\n" +
+      "/pausar - Pausar/retomar fila\n" +
+      "/limpar - Limpar fila\n" +
       "/cancelar - Cancelar operação atual\n" +
       "/help - Ver ajuda",
+    { parse_mode: "Markdown" }
+  );
+});
+
+// Comando /fila - Ver fila de postagens
+bot.command("fila", (ctx) => {
+  const queue = postQueueService.getQueue();
+  const pending = postQueueService.getPendingAds();
+  const config = postQueueService.getConfig();
+
+  if (queue.length === 0) {
+    ctx.reply("📭 Fila vazia. Nenhum anúncio agendado.");
+    return;
+  }
+
+  let message = `📋 *Fila de Postagens*\n\n`;
+  message += `⏱️ Intervalo: ${config.intervalMinutes} minutos\n`;
+  message += `${config.isPaused ? "⏸️" : "▶️"} Status: ${
+    config.isPaused ? "PAUSADA" : "ATIVA"
+  }\n\n`;
+
+  if (pending.length > 0) {
+    message += `🟡 *Pendentes (${pending.length}):*\n`;
+    pending.forEach((ad, index) => {
+      const time = ad.scheduledAt.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const title =
+        ad.ad.text.split("\n")[0].substring(0, 40) + "...";
+      message += `${index + 1}. ${time} - ${title}\n`;
+    });
+  }
+
+  const posted = queue.filter((ad) => ad.status === "posted");
+  if (posted.length > 0) {
+    message += `\n✅ *Postados (${posted.length})*\n`;
+  }
+
+  const errors = queue.filter((ad) => ad.status === "error");
+  if (errors.length > 0) {
+    message += `\n❌ *Erros (${errors.length})*\n`;
+  }
+
+  ctx.reply(message, { parse_mode: "Markdown" });
+});
+
+// Comando /intervalo - Configurar intervalo entre postagens
+bot.command("intervalo", (ctx) => {
+  const args = ctx.message.text.split(" ");
+
+  if (args.length < 2) {
+    const config = postQueueService.getConfig();
+    ctx.reply(
+      `⏱️ Intervalo atual: *${config.intervalMinutes} minutos*\n\n` +
+        `Para alterar, use: /intervalo [minutos]\n` +
+        `Exemplo: /intervalo 15`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  const minutes = parseInt(args[1]);
+
+  if (isNaN(minutes) || minutes < 1 || minutes > 1440) {
+    ctx.reply("❌ Valor inválido. Use entre 1 e 1440 minutos (24h).");
+    return;
+  }
+
+  try {
+    postQueueService.setInterval(minutes);
+    ctx.reply(
+      `✅ Intervalo configurado para *${minutes} minutos*\n\n` +
+        `Os horários da fila foram recalculados.`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (error: any) {
+    ctx.reply(`❌ Erro: ${error.message}`);
+  }
+});
+
+// Comando /pausar - Pausar/retomar fila
+bot.command("pausar", (ctx) => {
+  const isPaused = postQueueService.togglePause();
+
+  if (isPaused) {
+    ctx.reply(
+      "⏸️ *Fila pausada*\n\nAs postagens automáticas foram pausadas.\nUse /pausar novamente para retomar.",
+      { parse_mode: "Markdown" }
+    );
+  } else {
+    ctx.reply(
+      "▶️ *Fila retomada*\n\nAs postagens automáticas foram retomadas.",
+      { parse_mode: "Markdown" }
+    );
+  }
+});
+
+// Comando /limpar - Limpar fila
+bot.command("limpar", (ctx) => {
+  const pending = postQueueService.getPendingAds();
+
+  if (pending.length === 0) {
+    ctx.reply("📭 A fila já está vazia.");
+    return;
+  }
+
+  postQueueService.clearQueue();
+  ctx.reply(
+    `🗑️ *Fila limpa!*\n\n${pending.length} anúncios pendentes foram removidos.`,
     { parse_mode: "Markdown" }
   );
 });
@@ -210,23 +326,39 @@ bot.on("text", async (ctx) => {
 
     if (response === "sim" || response === "s" || response === "yes") {
       if (session.productData) {
-        await ctx.reply("🚀 Publicando anúncio...");
+        try {
+          // Formatar anúncio
+          const ad = formatProductAd(session.productData);
 
-        // Formatar anúncio
-        const ad = formatProductAd(session.productData);
+          // Adicionar à fila ao invés de postar imediatamente
+          const queuedAd = postQueueService.addToQueue(
+            ad,
+            userId,
+            ctx.from?.username
+          );
 
-        // Enviar anúncio para o canal
-        const success = await telegramService.sendAd(ad, APP_CONFIG.chatId);
+          const pending = postQueueService.getPendingAds();
+          const position = pending.findIndex((a) => a.id === queuedAd.id) + 1;
+          const config = postQueueService.getConfig();
 
-        if (success) {
+          const scheduledTime = queuedAd.scheduledAt.toLocaleString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
           await ctx.reply(
-            "🎉 *Anúncio publicado com sucesso no canal!*\n\nEnvie outro link de afiliado para criar novo anúncio.",
+            `✅ *Anúncio adicionado à fila!*\n\n` +
+              `📍 Posição: #${position}\n` +
+              `📅 Agendado para: ${scheduledTime}\n` +
+              `⏱️ Intervalo: ${config.intervalMinutes} min\n\n` +
+              `Use /fila para ver todos os anúncios agendados.\n\n` +
+              `Envie outro link para adicionar mais anúncios.`,
             { parse_mode: "Markdown" }
           );
-        } else {
-          await ctx.reply(
-            "❌ Erro ao publicar o anúncio.\n\nTente novamente ou use /cancelar."
-          );
+        } catch (error: any) {
+          await ctx.reply(`❌ Erro: ${error.message}`);
         }
 
         // Limpar sessão para novo anúncio

@@ -192,35 +192,29 @@ export function formatProductAd(
 
   text += `${emoji.title} ${product.title}\n\n`;
 
+  // Calcular preço final (com cupom se houver)
+  let finalPrice = product.discountPrice;
+  
+  if (product.coupon && product.couponDiscount) {
+    // Calcular preço final com cupom
+    const currentPrice = parseFloat(
+      product.discountPrice.replace(/[^\d,]/g, "").replace(",", ".")
+    );
+    const discountPercent = parseFloat(product.couponDiscount);
+    const priceWithCoupon = currentPrice * (1 - discountPercent / 100);
+    finalPrice = `R$ ${Math.floor(priceWithCoupon)}`;
+  }
+
   // Adiciona preço original se existir
   if (product.originalPrice) {
     text += `De ${emoji.originalPrice} ${product.originalPrice}\n`;
   }
 
-  // Preço com desconto e OFF na mesma linha
-  text += `Por ${emoji.discountPrice} ${product.discountPrice}`;
+  // Preço final (com ou sem cupom)
+  text += `Por ${emoji.discount} ${finalPrice}\n`;
 
-  if (product.discountPercentage) {
-    text += ` (${product.discountPercentage} OFF)`;
-  }
-
-  text += `\n`;
-
-  // Adiciona cupom e preço final se existir
+  // Adiciona cupom se existir
   if (product.coupon) {
-    // Se tem desconto adicional, mostra o preço final
-    if (product.couponDiscount) {
-      // Calcular preço final com cupom
-      const currentPrice = parseFloat(
-        product.discountPrice.replace(/[^\d,]/g, "").replace(",", ".")
-      );
-      const discountPercent = parseFloat(product.couponDiscount);
-      const finalPrice = currentPrice * (1 - discountPercent / 100);
-      const finalPriceFormatted = `R$ ${Math.floor(finalPrice)}`;
-
-      text += `+ Cupom ${emoji.discount} ${finalPriceFormatted}\n`;
-    }
-
     text += `\n${emoji.coupon} CUPOM: ${product.coupon}\n`;
 
     // Adiciona valor mínimo em linha separada se existir

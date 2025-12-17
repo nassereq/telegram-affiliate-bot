@@ -43,3 +43,22 @@ export interface TelegramContext {
   };
   reply: (text: string) => Promise<void>;
 }
+
+// Anúncio na fila de postagem
+export interface QueuedAd {
+  id: string;
+  ad: Ad;
+  userId: number;
+  username?: string;
+  createdAt: Date;
+  scheduledAt: Date;
+  status: "pending" | "posted" | "error";
+  error?: string;
+}
+
+// Configuração da fila de postagem
+export interface QueueConfig {
+  intervalMinutes: number;
+  isPaused: boolean;
+  maxQueueSize: number;
+}
