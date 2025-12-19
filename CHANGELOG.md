@@ -2,7 +2,8 @@
 
 ## 📋 Índice de Versões
 
-- [v6.1](#v61---01122025) - Atual ⭐
+- [v7.0](#v70---18122025) - Atual ⭐
+- [v6.1](#v61---01122025)
 - [v6.0](#v60---01122025)
 - [v5.1](#v51---25112025)
 - [v5.0](#v50---23112025)
@@ -13,6 +14,111 @@
 - [v2.0](#v20---17112025)
 - [v1.1](#v11---14112025)
 - [v1.0](#v10---14112025)
+
+---
+
+## v7.0 - 18/12/2025
+
+**Tag:** `v7.0` | **Branch:** `feature/improvements`
+
+### 🚀 Novas Funcionalidades Principais
+
+#### ⏰ Sistema de Fila de Postagem
+
+- **Serviço de Fila (PostQueueService)**
+  - Agendamento automático com intervalos configuráveis
+  - Primeira postagem: 3 minutos após confirmação
+  - Postagens subsequentes: intervalo de 5 minutos (padrão, configurável)
+  - Persistência em `queue.json`
+  - Limite máximo de 50 anúncios na fila
+  - Processamento automático a cada 30 segundos
+  - Recálculo automático quando o intervalo é alterado
+
+- **Comandos de Gerenciamento da Fila**
+  - `/fila` - Visualizar todos os posts agendados com horários
+  - `/intervalo [min]` - Configurar intervalo entre posts (1-1440 minutos)
+  - `/pausar` - Pausar/retomar postagens automáticas
+  - `/limpar` - Limpar todos os anúncios pendentes da fila
+
+#### 💬 Integração com WhatsApp
+
+- **WhatsAppService**
+  - Integração completa com WhatsApp Web.js
+  - Autenticação via QR Code (configuração única)
+  - Persistência de sessão com LocalAuth (sem necessidade de QR repetido)
+  - Envio de mensagens formatadas com imagens
+  - Suporte para grupos do WhatsApp
+  - Download e envio de imagens de produtos
+  - Gerenciamento de conexão e reconexão automática
+
+- **Arquitetura de Broadcaster**
+  - Postagem simultânea em Telegram E WhatsApp
+  - Rastreamento de status individual por plataforma
+  - Fallback gracioso se WhatsApp desconectado
+  - Sucesso se pelo menos uma plataforma receber a mensagem
+  - Serviço centralizado para multi-plataforma
+
+- **Comandos do WhatsApp**
+  - `/whatsapp_status` - Ver status de conexão e listar grupos disponíveis
+  - `/whatsapp_reconnect` - Reconectar se desconectado
+  - `/status` - Status combinado (Telegram + WhatsApp + Fila)
+
+#### 📝 Simplificação do Formato dos Anúncios
+
+- Exibição apenas do preço final (com cupom calculado automaticamente)
+- Remoção de exibições de preços intermediários
+- Formato mais limpo e menos confuso
+- Emoji ⚡️ para indicar preço promocional
+
+### 🔧 Detalhes Técnicos
+
+**Novos Arquivos Criados:**
+- `src/services/postQueue.ts` - Gerenciamento de fila (~320 linhas)
+- `src/services/whatsapp.ts` - Serviço WhatsApp (~200 linhas)
+- `src/services/broadcaster.ts` - Broadcaster multi-plataforma (~60 linhas)
+- `src/config/whatsapp.config.ts` - Configuração do WhatsApp
+- `src/types/index.ts` - Interfaces QueuedAd, QueueConfig
+
+**Arquivos Modificados:**
+- `src/app.ts` - Adicionados 7 novos comandos, integração com fila
+- `src/utils/formatter.ts` - Simplificação do formato (apenas preço final)
+- `package.json` - Novas dependências
+
+**Fluxo de Postagem Atualizado:**
+1. Usuário envia link do produto
+2. Bot faz scraping e mostra preview
+3. Usuário confirma com "SIM"
+4. Anúncio adicionado à fila com agendamento
+5. Processador de fila executa a cada 30 segundos
+6. Quando scheduledAt <= agora, broadcaster envia para ambas plataformas
+7. Status atualizado (posted/error) e persistido
+
+### 📦 Dependências Adicionadas
+
+- `whatsapp-web.js` (^1.26.0) - Cliente WhatsApp Web API
+- `qrcode-terminal` (^0.12.0) - Exibição de QR code no terminal
+- `sharp` (^0.33.5) - Processamento de imagens
+- `@types/qrcode-terminal` (^0.12.2) - Tipos TypeScript
+
+### 🌐 Variáveis de Ambiente
+
+**Nova variável:**
+- `WHATSAPP_GROUP_ID` - ID do grupo WhatsApp para postagens
+
+### 📊 Estatísticas
+
+- **3 novos arquivos de serviço**: ~580 linhas de código
+- **2 arquivos fortemente modificados**: app.ts, formatter.ts
+- **4 novos pacotes npm**
+- **7 novos comandos** de bot
+
+### 🎯 Melhorias de Arquitetura
+
+- Padrão Broadcaster para abstração multi-plataforma
+- Separação de responsabilidades (Queue, WhatsApp, Broadcaster)
+- Persistência robusta com JSON
+- Gerenciamento de estado de fila
+- Autenticação persistente do WhatsApp
 
 ---
 

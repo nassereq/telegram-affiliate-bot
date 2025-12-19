@@ -1,12 +1,12 @@
 import { QueuedAd, Ad, QueueConfig } from "../types";
-import telegramService from "./telegram";
+import broadcasterService from "./broadcaster";
 import * as fs from "fs";
 import * as path from "path";
 
 class PostQueueService {
   private queue: QueuedAd[] = [];
   private config: QueueConfig = {
-    intervalMinutes: 5, // Padrão: 5 minutos
+    intervalMinutes: 7, // Padrão: 5 minutos
     isPaused: false,
     maxQueueSize: 50,
   };
@@ -37,8 +37,7 @@ class PostQueueService {
     // Demais: intervalo configurado após o último
     const scheduledAt = lastAd
       ? new Date(
-          lastAd.scheduledAt.getTime() +
-            this.config.intervalMinutes * 60 * 1000
+          lastAd.scheduledAt.getTime() + this.config.intervalMinutes * 60 * 1000
         )
       : new Date(now.getTime() + 3 * 60 * 1000); // 3 minutos
 
@@ -55,9 +54,15 @@ class PostQueueService {
     this.queue.push(queuedAd);
     this.saveQueue();
 
-    const minutesUntilPost = Math.round((scheduledAt.getTime() - now.getTime()) / 60000);
+    const minutesUntilPost = Math.round(
+      (scheduledAt.getTime() - now.getTime()) / 60000
+    );
     console.log(`✅ Anúncio adicionado à fila: ${queuedAd.id}`);
-    console.log(`📅 Agendado para: ${scheduledAt.toLocaleString("pt-BR")} (em ${minutesUntilPost} minutos)`);
+    console.log(
+      `📅 Agendado para: ${scheduledAt.toLocaleString(
+        "pt-BR"
+      )} (em ${minutesUntilPost} minutos)`
+    );
 
     return queuedAd;
   }
@@ -105,9 +110,7 @@ class PostQueueService {
     if (pending.length === 0) return null;
 
     // Ordena por scheduledAt
-    pending.sort(
-      (a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime()
-    );
+    pending.sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
     return pending[0];
   }
 
@@ -125,9 +128,7 @@ class PostQueueService {
    */
   setInterval(minutes: number): void {
     if (minutes < 1 || minutes > 1440) {
-      throw new Error(
-        "Intervalo deve estar entre 1 e 1440 minutos (24h)"
-      );
+      throw new Error("Intervalo deve estar entre 1 e 1440 minutos (24h)");
     }
 
     this.config.intervalMinutes = minutes;
@@ -171,14 +172,12 @@ class PostQueueService {
     pendingAds.forEach((ad, index) => {
       if (index === 0) {
         // Primeiro anúncio: agenda para agora se não tiver horário futuro
-        ad.scheduledAt =
-          ad.scheduledAt > now ? ad.scheduledAt : now;
+        ad.scheduledAt = ad.scheduledAt > now ? ad.scheduledAt : now;
       } else {
         // Demais anúncios: baseado no anterior
         const prevAd = pendingAds[index - 1];
         ad.scheduledAt = new Date(
-          prevAd.scheduledAt.getTime() +
-            this.config.intervalMinutes * 60 * 1000
+          prevAd.scheduledAt.getTime() + this.config.intervalMinutes * 60 * 1000
         );
       }
     });
@@ -218,7 +217,9 @@ class PostQueueService {
     );
 
     if (pendingAds.length > 0) {
-      console.log(`⏰ Verificando fila: ${pendingAds.length} anúncio(s) pronto(s) para postar`);
+      console.log(
+        `⏰ Verificando fila: ${pendingAds.length} anúncio(s) pronto(s) para postar`
+      );
     }
 
     for (const queuedAd of pendingAds) {
@@ -228,23 +229,20 @@ class PostQueueService {
         console.log(`📤 Postando anúncio: ${queuedAd.id}`);
         console.log(`   Agendado: ${scheduledTime} | Atual: ${currentTime}`);
 
-        const success = await telegramService.sendAd(queuedAd.ad);
+        const result = await broadcasterService.broadcastAd(queuedAd.ad);
 
-        if (success) {
+        if (result.success) {
           queuedAd.status = "posted";
           console.log(`✅ Anúncio postado com sucesso: ${queuedAd.id}`);
         } else {
           queuedAd.status = "error";
-          queuedAd.error = "Erro ao enviar para o Telegram";
+          queuedAd.error = "Erro ao enviar para Telegram e WhatsApp";
           console.error(`❌ Erro ao postar: ${queuedAd.id}`);
         }
       } catch (error: any) {
         queuedAd.status = "error";
         queuedAd.error = error.message;
-        console.error(
-          `❌ Erro ao postar ${queuedAd.id}:`,
-          error.message
-        );
+        console.error(`❌ Erro ao postar ${queuedAd.id}:`, error.message);
       }
 
       this.saveQueue();
@@ -285,10 +283,7 @@ class PostQueueService {
         queue: this.queue,
         config: this.config,
       };
-      fs.writeFileSync(
-        this.queueFilePath,
-        JSON.stringify(data, null, 2)
-      );
+      fs.writeFileSync(this.queueFilePath, JSON.stringify(data, null, 2));
     } catch (error) {
       console.error("❌ Erro ao salvar fila:", error);
     }
@@ -300,9 +295,7 @@ class PostQueueService {
   private loadQueue(): void {
     try {
       if (fs.existsSync(this.queueFilePath)) {
-        const data = JSON.parse(
-          fs.readFileSync(this.queueFilePath, "utf8")
-        );
+        const data = JSON.parse(fs.readFileSync(this.queueFilePath, "utf8"));
 
         // Converter strings de data para objetos Date
         this.queue = data.queue.map((ad: any) => ({

@@ -194,7 +194,7 @@ export function formatProductAd(
 
   // Calcular preço final (com cupom se houver)
   let finalPrice = product.discountPrice;
-  
+
   if (product.coupon && product.couponDiscount) {
     // Calcular preço final com cupom
     const currentPrice = parseFloat(

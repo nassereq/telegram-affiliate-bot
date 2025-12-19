@@ -1,6 +1,8 @@
 import { Telegraf, Context } from "telegraf";
 import { message } from "telegraf/filters";
 import telegramService from "./services/telegram";
+import whatsappService from "./services/whatsapp";
+import broadcasterService from "./services/broadcaster";
 import ImageAnalyzer from "./services/imageAnalysis";
 import platformManager from "./platforms/platformManager";
 import sessionManager from "./utils/sessionManager";
@@ -152,8 +154,7 @@ bot.command("fila", (ctx) => {
         hour: "2-digit",
         minute: "2-digit",
       });
-      const title =
-        ad.ad.text.split("\n")[0].substring(0, 40) + "...";
+      const title = ad.ad.text.split("\n")[0].substring(0, 40) + "...";
       message += `${index + 1}. ${time} - ${title}\n`;
     });
   }
@@ -236,6 +237,123 @@ bot.command("limpar", (ctx) => {
     `🗑️ *Fila limpa!*\n\n${pending.length} anúncios pendentes foram removidos.`,
     { parse_mode: "Markdown" }
   );
+});
+
+// Comando /whatsapp_status - Ver status do WhatsApp
+bot.command("whatsapp_status", async (ctx) => {
+  try {
+    const status = await whatsappService.getStatus();
+
+    if (status.isInitializing) {
+      ctx.reply(
+        "⏳ *WhatsApp está inicializando...*\n\nAguarde alguns instantes.",
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+
+    if (!status.isReady) {
+      const qrCode = whatsappService.getQRCode();
+      if (qrCode) {
+        ctx.reply(
+          "📱 *WhatsApp aguardando autenticação*\n\n" +
+            "Escaneie o QR Code exibido no console do servidor.\n\n" +
+            "💡 O QR Code também foi impresso no terminal onde o bot está rodando.",
+          { parse_mode: "Markdown" }
+        );
+      } else {
+        ctx.reply(
+          "❌ *WhatsApp não conectado*\n\n" +
+            "Use /whatsapp_reconnect para tentar reconectar.",
+          { parse_mode: "Markdown" }
+        );
+      }
+      return;
+    }
+
+    // WhatsApp está pronto
+    let message = "✅ *WhatsApp conectado e pronto!*\n\n";
+
+    if (status.userInfo) {
+      message += `📱 Conta: ${status.userInfo.pushname}\n`;
+      message += `📞 Número: ${status.userInfo.wid.user}\n\n`;
+    }
+
+    if (status.groups && status.groups.length > 0) {
+      message += `💬 *Grupos disponíveis (${status.groups.length}):*\n\n`;
+      status.groups.forEach((group, index) => {
+        message += `${index + 1}. ${group.name}\n`;
+        message += `   ID: \`${group.id}\`\n\n`;
+      });
+      message += "\n💡 Use o ID do grupo no arquivo .env (WHATSAPP_GROUP_ID)";
+    } else {
+      message += "⚠️ Nenhum grupo encontrado.";
+    }
+
+    ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error: any) {
+    ctx.reply(`❌ Erro ao obter status: ${error.message}`);
+  }
+});
+
+// Comando /whatsapp_reconnect - Reconectar WhatsApp
+bot.command("whatsapp_reconnect", async (ctx) => {
+  try {
+    ctx.reply("🔄 Reconectando WhatsApp... Aguarde.");
+    await whatsappService.reconnect();
+    ctx.reply(
+      "✅ Reconexão iniciada!\n\n" +
+        "Use /whatsapp_status para verificar o status e ver o QR Code se necessário.",
+      { parse_mode: "Markdown" }
+    );
+  } catch (error: any) {
+    ctx.reply(`❌ Erro ao reconectar: ${error.message}`);
+  }
+});
+
+// Comando /status - Status geral (Telegram + WhatsApp)
+bot.command("status", async (ctx) => {
+  try {
+    const broadcastStatus = await broadcasterService.getStatus();
+    const queueConfig = postQueueService.getConfig();
+    const pendingAds = postQueueService.getPendingAds();
+
+    let message = "📊 *Status Geral do Bot*\n\n";
+
+    // Status das plataformas
+    message += "🌐 *Plataformas:*\n";
+    message += `${broadcastStatus.telegram ? "✅" : "❌"} Telegram: ${
+      broadcastStatus.telegram ? "Conectado" : "Desconectado"
+    }\n`;
+    message += `${broadcastStatus.whatsapp ? "✅" : "❌"} WhatsApp: ${
+      broadcastStatus.whatsapp ? "Conectado" : "Aguardando"
+    }\n\n`;
+
+    // Status da fila
+    message += "📋 *Fila de Postagens:*\n";
+    message += `${queueConfig.isPaused ? "⏸️" : "▶️"} Status: ${
+      queueConfig.isPaused ? "PAUSADA" : "ATIVA"
+    }\n`;
+    message += `📦 Anúncios pendentes: ${pendingAds.length}\n`;
+    message += `⏱️ Intervalo: ${queueConfig.intervalMinutes} min\n\n`;
+
+    if (pendingAds.length > 0) {
+      const nextAd = pendingAds[0];
+      const nextTime = nextAd.scheduledAt.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      message += `⏰ Próximo anúncio: ${nextTime}`;
+    } else {
+      message += "💡 Nenhum anúncio agendado no momento.";
+    }
+
+    ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error: any) {
+    ctx.reply(`❌ Erro ao obter status: ${error.message}`);
+  }
 });
 
 // Handler para mensagens de texto

@@ -2,7 +2,7 @@
 
 ## 📋 Visão Geral
 
-Bot de Telegram automatizado para criar e publicar anúncios de produtos do Mercado Livre com links de afiliados, utilizando análise de imagem com IA.
+Bot multi-plataforma automatizado para criar e publicar anúncios de produtos da Mercado Livre e Amazon com links de afiliados. Utiliza análise de imagem com IA, sistema de fila com agendamento automático, e broadcasting simultâneo para Telegram e WhatsApp.
 
 ---
 
@@ -18,16 +18,23 @@ Bot de Telegram automatizado para criar e publicar anúncios de produtos do Merc
 
 ### **Frameworks e Bibliotecas**
 
-- **Telegraf** - Framework para criar bots do Telegram
-- **Axios** - Cliente HTTP para requisições à API
+- **Telegraf 4.16.3** - Framework para criar bots do Telegram
+- **whatsapp-web.js 1.26.0** - Cliente WhatsApp Web API (integração WhatsApp)
+- **Puppeteer 21.11.0** - Headless Chrome para scraping e WhatsApp
+- **Axios 0.21.4** - Cliente HTTP para requisições
+- **Cheerio 1.1.2** - Parser HTML para scraping (Amazon/ML)
 - **dotenv** - Gerenciamento de variáveis de ambiente
-- **Sharp** - Processamento de imagens (se necessário)
+- **Sharp 0.33.5** - Processamento e otimização de imagens
+- **qrcode-terminal 0.12.0** - Exibição de QR code no terminal
+- **Express 4.18.2** - Servidor HTTP
 
 ### **APIs Externas**
 
-- **GitHub Models API** - Análise de imagem com GPT-4o (gratuito)
+- **GitHub Models API** - Análise de imagem com GPT-4 Vision
 - **Telegram Bot API** - Comunicação com o Telegram
-- **Mercado Livre API** - Consulta de produtos (opcional)
+- **WhatsApp Web API** - Comunicação com WhatsApp (via whatsapp-web.js)
+- **Mercado Livre** - Scraping de produtos com Puppeteer
+- **Amazon Brasil** - Scraping de produtos com Cheerio
 
 ---
 
@@ -40,7 +47,8 @@ telegram-affiliate-bot/
 │   ├── app.ts                    # Aplicação principal (Entry point)
 │   │
 │   ├── config/                   # Configurações
-│   │   └── config.ts             # Carrega variáveis de ambiente
+│   │   ├── config.ts             # Carrega variáveis de ambiente
+│   │   └── whatsapp.config.ts    # Configuração WhatsApp (NEW v7.0)
 │   │
 │   ├── controllers/              # Controladores (Lógica de negócio)
 │   │   └── adGenerator.ts        # Orquestra geração de anúncios
@@ -48,7 +56,10 @@ telegram-affiliate-bot/
 │   ├── services/                 # Serviços (Integrações externas)
 │   │   ├── imageAnalysis.ts      # Análise de imagem com IA
 │   │   ├── mercadoLivre.ts       # Integração Mercado Livre
-│   │   └── telegram.ts           # Serviço do Telegram
+│   │   ├── telegram.ts           # Serviço Telegram
+│   │   ├── postQueue.ts          # Sistema de fila de postagem (NEW v7.0)
+│   │   ├── whatsapp.ts           # Serviço WhatsApp (NEW v7.0)
+│   │   └── broadcaster.ts        # Broadcasting multi-plataforma (NEW v7.0)
 │   │
 │   ├── utils/                    # Utilitários
 │   │   ├── formatter.ts          # Formatação de mensagens
@@ -69,6 +80,103 @@ telegram-affiliate-bot/
 
 ---
 
+## 🏛️ Arquitetura Multi-Plataforma (v7.0)
+
+### **Fluxo de Broadcasting com Fila**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        USUÁRIO                                   │
+│             Envia link → Confirma com "SIM"                     │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   POST QUEUE SERVICE                             │
+│   • Adiciona anúncio à fila (queue.json)                        │
+│   • Primeira postagem: +3 minutos                               │
+│   • Postagens seguintes: +5 minutos (configurável)              │
+│   • Processamento a cada 30 segundos                            │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                    (scheduledAt <= now)
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    BROADCASTER SERVICE                           │
+│   • Envia para múltiplas plataformas simultaneamente            │
+│   • Rastreamento individual de sucesso/falha                    │
+│   • Fallback gracioso se uma plataforma falhar                  │
+└──────────────────┬───────────────────────┬──────────────────────┘
+                   │                       │
+                   ▼                       ▼
+    ┌──────────────────────┐   ┌──────────────────────┐
+    │  TELEGRAM SERVICE    │   │  WHATSAPP SERVICE    │
+    │  • Envia mensagem    │   │  • QR Auth           │
+    │  • Envia imagem      │   │  • LocalAuth         │
+    │  • Canal/Grupo       │   │  • Envia imagem      │
+    └──────────────────────┘   └──────────────────────┘
+```
+
+### **Queue System - Fluxo Detalhado**
+
+1. **Entrada do Usuário**
+   - Usuário envia link do produto
+   - Bot faz scraping (Mercado Livre ou Amazon)
+   - Exibe preview do anúncio
+
+2. **Confirmação e Agendamento**
+   - Usuário confirma com "SIM"
+   - `postQueue.addToQueue()` é chamado
+   - Calcula `scheduledAt`:
+     * Se fila vazia: `now + 3 minutos`
+     * Se há fila: `último scheduledAt + intervalMinutes`
+
+3. **Processamento Automático**
+   - Timer executa `processQueue()` a cada 30 segundos
+   - Filtra ads com `status: "pending"` e `scheduledAt <= now`
+   - Para cada ad pendente:
+     * Chama `broadcaster.broadcastAd()`
+     * Atualiza status para "posted" ou "error"
+     * Persiste em `queue.json`
+
+4. **Persistência**
+   - Toda alteração salva em `queue.json`
+   - Carrega fila ao reiniciar bot
+   - Recalcula horários se intervalo mudado
+
+### **WhatsApp Integration - Arquitetura**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   WHATSAPP SERVICE                               │
+├─────────────────────────────────────────────────────────────────┤
+│  whatsapp-web.js Client                                         │
+│    ├── AuthStrategy: LocalAuth                                  │
+│    │     └── Sessão persistida em whatsapp-session/             │
+│    ├── Puppeteer (headless Chrome)                              │
+│    └── Events:                                                   │
+│          • "qr" → Exibe QR no terminal                          │
+│          • "ready" → Conectado                                  │
+│          • "disconnected" → Reconexão                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Autenticação WhatsApp:**
+1. Primeira execução: exibe QR code no terminal
+2. Usuário escaneia com WhatsApp mobile
+3. Sessão salva em `whatsapp-session/`
+4. Próximas execuções: carrega sessão automaticamente
+
+**Envio de Mensagem:**
+1. Formata texto do anúncio
+2. Baixa imagem do produto (axios)
+3. Converte para Buffer com Sharp
+4. Cria MessageMedia com base64
+5. Envia para grupo configurado em `WHATSAPP_GROUP_ID`
+
+---
+
 ## 🎭 Responsabilidades dos Componentes
 
 ### **1. app.ts** - Orquestrador Principal
@@ -78,10 +186,14 @@ telegram-affiliate-bot/
 **Responsabilidades:**
 
 - Inicializa o bot do Telegram
-- Define comandos (`/start`, `/help`, `/cancelar`)
+- Inicializa WhatsApp Service (v7.0)
+- Define comandos básicos (`/start`, `/help`, `/cancelar`)
+- Define comandos de fila (`/fila`, `/intervalo`, `/pausar`, `/limpar`) (v7.0)
+- Define comandos WhatsApp (`/whatsapp_status`, `/whatsapp_reconnect`, `/status`) (v7.0)
 - Gerencia fluxo de conversa com usuário
 - Trata mensagens de texto e imagens
 - Coordena chamadas aos serviços
+- Integração com PostQueueService em vez de envio direto (v7.0)
 
 ---
 
@@ -200,7 +312,165 @@ launch(): Promise<void>
 
 ---
 
-### **7. utils/formatter.ts** - Formatador de Mensagens
+### **7. services/postQueue.ts** - Sistema de Fila de Postagem (NEW v7.0)
+
+**Papel:** Gerencia fila de postagem com agendamento automático
+
+**Responsabilidades:**
+
+- Mantém fila de anúncios agendados
+- Calcula horários de postagem (3min inicial + intervalo configurável)
+- Processa fila automaticamente a cada 30 segundos
+- Persiste estado em `queue.json`
+- Recalcula horários quando intervalo muda
+- Gerencia pause/resume da fila
+- Limpa anúncios completados/com erro
+
+**Principais Métodos:**
+
+```typescript
+addToQueue(ad: Ad, userId: number, username?: string): string
+processQueue(): Promise<void>
+setInterval(minutes: number): void
+pauseQueue(): void
+resumeQueue(): void
+clearQueue(): void
+getQueueStatus(): { pending: QueuedAd[], config: QueueConfig }
+```
+
+**Configuração:**
+
+```typescript
+{
+  intervalMinutes: 5,      // Intervalo entre posts (default: 5 min)
+  isPaused: false,         // Status da fila
+  maxQueueSize: 50         // Limite de anúncios
+}
+```
+
+**Fluxo:**
+1. `addToQueue()` → calcula scheduledAt
+2. Timer 30s → `processQueue()` verifica ads prontos
+3. scheduledAt <= now → chama broadcaster
+4. Atualiza status → salva em queue.json
+
+---
+
+### **8. services/whatsapp.ts** - Serviço WhatsApp (NEW v7.0)
+
+**Papel:** Integração completa com WhatsApp Web via whatsapp-web.js
+
+**Responsabilidades:**
+
+- Gerencia autenticação via QR code
+- Mantém sessão persistente (LocalAuth)
+- Envia mensagens formatadas
+- Envia imagens de produtos
+- Lista grupos disponíveis
+- Gerencia conexão/reconexão
+- Download de imagens de URLs
+
+**Principais Métodos:**
+
+```typescript
+initialize(): Promise<void>
+sendAd(ad: Ad): Promise<boolean>
+reconnect(): Promise<void>
+getStatus(): string
+listGroups(): Promise<Array<{ id: string, name: string }>>
+isConnected(): boolean
+```
+
+**Eventos Gerenciados:**
+- `qr` → Exibe QR code no terminal
+- `ready` → WhatsApp conectado
+- `authenticated` → Sessão autenticada
+- `disconnected` → Tentativa de reconexão
+
+**Autenticação:**
+```typescript
+new Client({
+  authStrategy: new LocalAuth({
+    dataPath: './whatsapp-session'
+  }),
+  puppeteer: {
+    headless: true,
+    args: ['--no-sandbox', ...]
+  }
+})
+```
+
+---
+
+### **9. services/broadcaster.ts** - Broadcasting Multi-Plataforma (NEW v7.0)
+
+**Papel:** Coordena envio simultâneo para múltiplas plataformas
+
+**Responsabilidades:**
+
+- Envia anúncio para Telegram E WhatsApp
+- Rastreia sucesso individual de cada plataforma
+- Retorna status consolidado
+- Fallback gracioso se plataforma falhar
+- Consolida status de todas plataformas
+
+**Principais Métodos:**
+
+```typescript
+broadcastAd(ad: Ad): Promise<{
+  telegram: boolean,
+  whatsapp: boolean,
+  success: boolean
+}>
+getStatus(): string
+```
+
+**Lógica:**
+```typescript
+// Tenta ambas plataformas
+telegram = await telegramService.sendAd(ad)
+whatsapp = await whatsappService.sendAd(ad) // se conectado
+
+// Sucesso se pelo menos uma funcionar
+success = telegram || whatsapp
+```
+
+---
+
+### **10. config/whatsapp.config.ts** - Configuração WhatsApp (NEW v7.0)
+
+**Papel:** Centraliza configurações do WhatsApp
+
+**Responsabilidades:**
+
+- Carrega `WHATSAPP_GROUP_ID` do .env
+- Define caminho da sessão
+- Configura opções do Puppeteer
+
+**Configuração:**
+
+```typescript
+{
+  groupId: process.env.WHATSAPP_GROUP_ID || "",
+  sessionPath: "./whatsapp-session",
+  puppeteerOptions: {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu'
+    ]
+  }
+}
+```
+
+---
+
+### **11. utils/formatter.ts** - Formatador de Mensagens
 
 **Papel:** Formata dados em mensagens bonitas para Telegram
 
