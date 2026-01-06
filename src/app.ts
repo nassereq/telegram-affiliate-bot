@@ -1,15 +1,17 @@
 import { Telegraf, Context } from "telegraf";
 import { message } from "telegraf/filters";
 import telegramService from "./services/telegram";
-import whatsappService from "./services/whatsapp";
-import broadcasterService from "./services/broadcaster";
 import ImageAnalyzer from "./services/imageAnalysis";
-import platformManager from "./platforms/platformManager";
+import AdGenerator from "./controllers/adGenerator";
+import MercadoLivreService from "./services/mercadoLivre";
+import AmazonService from "./services/amazon";
+import postQueueService from "./services/postQueue";
+import whatsappService from "./services/whatsapp";
 import sessionManager from "./utils/sessionManager";
+import platformManager from "./platforms/platformManager";
 import { formatProductAd } from "./utils/formatter";
 import { isValidProductData, isValidUrl } from "./utils/validator";
 import { APP_CONFIG, validateConfig } from "./config/config";
-import postQueueService from "./services/postQueue";
 
 // Valida configuração antes de iniciar
 try {
@@ -28,6 +30,50 @@ const AUTHORIZED_USERS = [
   "NascimentoClara", // @NascimentoClara
   // Adicione os User IDs numéricos aqui após obter com /getid
 ];
+
+// 🔒 Função auxiliar para verificar autorização
+function isAuthorized(ctx: Context): boolean {
+  const userId = ctx.from?.id;
+  const username = ctx.from?.username;
+  const chatType = ctx.chat?.type;
+
+  // Permitir em canais
+  if (chatType === "channel") {
+    return true;
+  }
+
+  // Verificar se o usuário está autorizado
+  const isUsernameAuthorized = username
+    ? AUTHORIZED_USERS.includes(username)
+    : false;
+  const isUserIdAuthorized = userId
+    ? AUTHORIZED_USERS.includes(userId.toString())
+    : false;
+
+  return isUsernameAuthorized || isUserIdAuthorized;
+}
+
+// 🔧 Função auxiliar para extrair título do anúncio
+function getAdTitle(ad: Ad): string {
+  // Extrai a primeira linha do texto do anúncio (que geralmente é o título)
+  const firstLine = ad.text.split("\n")[0];
+
+  // Remove emojis e caracteres inválidos
+  let cleaned = firstLine
+    .replace(/[⚡️🏠👕💄🎮📱🔥✔️❌]/g, "") // Remove emojis conhecidos
+    .replace(/[\uD800-\uDFFF]/g, "") // Remove surrogates órfãos (caracteres UTF-8 inválidos)
+    .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, "") // Remove caracteres de controle
+    .trim();
+
+  return cleaned || "Produto";
+}
+
+// 🔧 Função auxiliar para extrair URL do anúncio
+function getAdUrl(ad: Ad): string {
+  // Procura por URLs no formato https://... no texto
+  const urlMatch = ad.text.match(/(https?:\/\/[^\s]+)/);
+  return urlMatch ? urlMatch[1] : "";
+}
 
 // Middleware de autorização
 bot.use(async (ctx, next) => {
@@ -130,46 +176,68 @@ bot.help((ctx) => {
   );
 });
 
-// Comando /fila - Ver fila de postagens
-bot.command("fila", (ctx) => {
-  const queue = postQueueService.getQueue();
-  const pending = postQueueService.getPendingAds();
-  const config = postQueueService.getConfig();
-
-  if (queue.length === 0) {
-    ctx.reply("📭 Fila vazia. Nenhum anúncio agendado.");
-    return;
+// 📋 Comando: Ver fila de anúncios
+bot.command("fila", async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
   }
 
-  let message = `📋 *Fila de Postagens*\n\n`;
-  message += `⏱️ Intervalo: ${config.intervalMinutes} minutos\n`;
-  message += `${config.isPaused ? "⏸️" : "▶️"} Status: ${
-    config.isPaused ? "PAUSADA" : "ATIVA"
-  }\n\n`;
+  try {
+    const queue = postQueueService.getQueue();
+    const pending = postQueueService.getPendingAds();
+    const failed = postQueueService.getFailedAds();
+    const config = postQueueService.getConfig();
 
-  if (pending.length > 0) {
-    message += `🟡 *Pendentes (${pending.length}):*\n`;
-    pending.forEach((ad, index) => {
-      const time = ad.scheduledAt.toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
+    if (queue.length === 0) {
+      return ctx.reply(
+        "📭 *Fila vazia*\n\nEnvie um link de produto para começar!",
+        { parse_mode: "Markdown" }
+      );
+    }
+
+    let message = `📋 *Fila de Anúncios*\n\n`;
+
+    // Anúncios pendentes
+    if (pending.length > 0) {
+      message += `✅ *Pendentes*\n\n`;
+
+      pending.forEach((ad, index) => {
+        const title = getAdTitle(ad.ad);
+        const link = getAdUrl(ad.ad);
+
+        // Formatar horário como HH:mm
+        const scheduledTime = ad.scheduledAt.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        message += `${index + 1} (${scheduledTime}) - ${title}\n`;
+        message += `🔗 ${link}\n\n`;
       });
-      const title = ad.ad.text.split("\n")[0].substring(0, 40) + "...";
-      message += `${index + 1}. ${time} - ${title}\n`;
-    });
-  }
+    }
 
-  const posted = queue.filter((ad) => ad.status === "posted");
-  if (posted.length > 0) {
-    message += `\n✅ *Postados (${posted.length})*\n`;
-  }
+    // Anúncios com erro
+    if (failed.length > 0) {
+      message += `❌ *Com Erros*\n\n`;
 
-  const errors = queue.filter((ad) => ad.status === "error");
-  if (errors.length > 0) {
-    message += `\n❌ *Erros (${errors.length})*\n`;
-  }
+      failed.forEach((ad, index) => {
+        const title = getAdTitle(ad.ad);
+        const link = getAdUrl(ad.ad);
 
-  ctx.reply(message, { parse_mode: "Markdown" });
+        message += `${index + 1} - ${title}\n`;
+        message += `🔗 ${link}\n\n`;
+      });
+    }
+
+    // Configurações
+    message += `\n⚙️ *Configurações:*\n`;
+    message += `⏱️ Intervalo: ${config.intervalMinutes} minutos\n`;
+    message += `${config.isPaused ? "⏸️ Pausada" : "▶️ Ativa"}\n`;
+
+    ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error: any) {
+    ctx.reply(`❌ Erro: ${error.message}`);
+  }
 });
 
 // Comando /intervalo - Configurar intervalo entre postagens
@@ -311,9 +379,50 @@ bot.command("whatsapp_reconnect", async (ctx) => {
   }
 });
 
+// Comando /whatsapp_toggle - Ativar/Desativar WhatsApp
+bot.command("whatsapp_toggle", async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
+  }
+
+  try {
+    const { whatsappConfig, saveWhatsAppState } = await import(
+      "./config/whatsapp.config"
+    );
+
+    // Alterna o estado
+    whatsappConfig.enabled = !whatsappConfig.enabled;
+
+    // Salva o estado persistido
+    saveWhatsAppState(whatsappConfig.enabled);
+
+    const status = whatsappConfig.enabled ? "✅ ATIVADO" : "❌ DESATIVADO";
+    const emoji = whatsappConfig.enabled ? "✅" : "❌";
+
+    let message = `${emoji} *WhatsApp ${status}*\n\n`;
+
+    if (whatsappConfig.enabled) {
+      message += "📤 Anúncios serão enviados para:\n";
+      message += "• Telegram ✅\n";
+      message += "• WhatsApp ✅\n\n";
+      message += "💡 Use /whatsapp\\_status para verificar a conexão";
+    } else {
+      message += "📤 Anúncios serão enviados APENAS para:\n";
+      message += "• Telegram ✅\n\n";
+      message += "⚠️ WhatsApp não receberá anúncios\n\n";
+      message += "💡 Use /whatsapp\\_toggle novamente para reativar";
+    }
+
+    ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error: any) {
+    ctx.reply(`❌ Erro: ${error.message}`);
+  }
+});
+
 // Comando /status - Status geral (Telegram + WhatsApp)
 bot.command("status", async (ctx) => {
   try {
+    const { whatsappConfig } = await import("./config/whatsapp.config");
     const broadcastStatus = await broadcasterService.getStatus();
     const queueConfig = postQueueService.getConfig();
     const pendingAds = postQueueService.getPendingAds();
@@ -325,9 +434,16 @@ bot.command("status", async (ctx) => {
     message += `${broadcastStatus.telegram ? "✅" : "❌"} Telegram: ${
       broadcastStatus.telegram ? "Conectado" : "Desconectado"
     }\n`;
-    message += `${broadcastStatus.whatsapp ? "✅" : "❌"} WhatsApp: ${
-      broadcastStatus.whatsapp ? "Conectado" : "Aguardando"
-    }\n\n`;
+
+    if (whatsappConfig.enabled) {
+      message += `${broadcastStatus.whatsapp ? "✅" : "⚠️"} WhatsApp: ${
+        broadcastStatus.whatsapp ? "Conectado" : "Aguardando"
+      }\n`;
+    } else {
+      message += `❌ WhatsApp: DESABILITADO\n`;
+      message += `   💡 Use /whatsapp\\_toggle para ativar\n`;
+    }
+    message += "\n";
 
     // Status da fila
     message += "📋 *Fila de Postagens:*\n";
@@ -366,6 +482,46 @@ bot.on("text", async (ctx) => {
 
   if (!session) {
     await ctx.reply("Use /start para começar.");
+    return;
+  }
+
+  // Se está aguardando confirmação de reenvio de erros
+  if (session.step === "awaiting_retry_confirmation") {
+    const response = text.trim().toLowerCase();
+
+    if (response === "sim" || response === "s") {
+      try {
+        const result = await postQueueService.retryFailedAds();
+
+        let responseMsg = `✅ *Reenvio Concluído!*\n\n`;
+        responseMsg += `📊 Total de erros: ${result.total}\n`;
+        responseMsg += `✅ Reagendados: ${result.requeued}\n`;
+
+        if (result.failed > 0) {
+          responseMsg += `❌ Falhas: ${result.failed}\n`;
+        }
+
+        responseMsg += `\nUse /fila para ver os novos agendamentos.`;
+
+        await ctx.reply(responseMsg, { parse_mode: "Markdown" });
+        sessionManager.clearSession(userId);
+      } catch (error: any) {
+        await ctx.reply(`❌ Erro: ${error.message}`);
+        sessionManager.clearSession(userId);
+      }
+    } else if (
+      response === "nao" ||
+      response === "não" ||
+      response === "n" ||
+      response === "no"
+    ) {
+      await ctx.reply("❌ Reenvio cancelado.");
+      sessionManager.clearSession(userId);
+    } else {
+      await ctx.reply("Por favor, responda com *SIM* ou *NAO*.", {
+        parse_mode: "Markdown",
+      });
+    }
     return;
   }
 
@@ -752,4 +908,233 @@ process.once("SIGINT", () => {
 process.once("SIGTERM", () => {
   console.log("\n⏹️  Parando bot...");
   telegramService.stop("SIGTERM");
+});
+
+// 🔄 Comando: Reenviar anúncios com erro
+bot.command("reenviar_erros", async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
+  }
+
+  try {
+    const failedAds = postQueueService.getFailedAds();
+
+    if (failedAds.length === 0) {
+      return ctx.reply("✅ Não há anúncios com erro na fila!");
+    }
+
+    // Mostrar anúncios com erro
+    let message = `⚠️ *Anúncios com Erro (${failedAds.length})*\n\n`;
+
+    failedAds.forEach((ad, index) => {
+      const errorMsg = ad.error || "Erro desconhecido";
+      const title = getAdTitle(ad.ad);
+
+      message += `${index + 1}️⃣ ${title}\n`;
+      message += `   ❌ Erro: ${errorMsg}\n`;
+      message += `   📅 Tentativa: ${ad.scheduledAt.toLocaleString(
+        "pt-BR"
+      )}\n\n`;
+    });
+
+    message += "🔄 *Deseja reenviar todos?*\n\n";
+    message += "• Digite *SIM* para reenviar\n";
+    message += "• Digite *NAO* para cancelar";
+
+    await ctx.reply(message, { parse_mode: "Markdown" });
+
+    // Salvar estado de espera de confirmação
+    const userId = ctx.from.id;
+    sessionManager.setState(userId, "awaiting_retry_confirmation");
+  } catch (error: any) {
+    ctx.reply(`❌ Erro: ${error.message}`);
+  }
+});
+
+// 🔄 Comando: Ver apenas anúncios com erro
+bot.command("ver_erros", async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
+  }
+
+  try {
+    const failedAds = postQueueService.getFailedAds();
+
+    if (failedAds.length === 0) {
+      return ctx.reply("✅ Não há anúncios com erro na fila!");
+    }
+
+    let message = `⚠️ *Anúncios com Erro (${failedAds.length})*\n\n`;
+
+    failedAds.forEach((ad, index) => {
+      const errorMsg = ad.error || "Erro desconhecido";
+      const createdAt = ad.createdAt.toLocaleString("pt-BR");
+      const title = getAdTitle(ad.ad);
+
+      message += `${index + 1}️⃣ *${title}*\n`;
+      message += `   ❌ Erro: \`${errorMsg}\`\n`;
+      message += `   📅 Criado: ${createdAt}\n`;
+      message += `   🆔 ID: \`${ad.id}\`\n\n`;
+    });
+
+    message += "💡 Use /reenviar\\_erros para reenviar todos";
+
+    ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error: any) {
+    ctx.reply(`❌ Erro: ${error.message}`);
+  }
+});
+
+// 🔄 Comando: Reenviar erro específico (/erro1, /erro2, etc)
+bot.hears(/^\/erro(\d+)$/i, async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
+  }
+
+  try {
+    const match = ctx.message.text.match(/^\/erro(\d+)$/i);
+    if (!match) return;
+
+    const errorIndex = parseInt(match[1]) - 1; // Converter para índice (base 0)
+    const failedAds = postQueueService.getFailedAds();
+
+    if (errorIndex < 0 || errorIndex >= failedAds.length) {
+      return ctx.reply(
+        `❌ Erro #${errorIndex + 1} não encontrado.\n\n` +
+          `Use /ver_erros para ver a lista completa.`
+      );
+    }
+
+    const failedAd = failedAds[errorIndex];
+    const url = getAdUrl(failedAd.ad);
+
+    if (!url) {
+      return ctx.reply(
+        `❌ Não foi possível extrair a URL do anúncio.\n\n` +
+          `Use /ver_erros para verificar os detalhes.`
+      );
+    }
+
+    // Notificar que está reprocessando
+    await ctx.reply(
+      `🔄 Reprocessando anúncio #${errorIndex + 1}...\n\n` +
+        `📎 Link: ${url}\n\n` +
+        `⏳ Aguarde enquanto busco as informações...`
+    );
+
+    // Guardar informações do usuário
+    const userId = ctx.from!.id;
+    const username = ctx.from!.username || ctx.from!.first_name;
+
+    // Remover o anúncio com erro da fila
+    postQueueService.removeFromQueue(failedAd.id);
+
+    // Processar como se fosse um novo link
+    // Detectar plataforma
+    let productData;
+    let platform: "mercadolivre" | "amazon";
+
+    if (url.includes("mercadolivre.com") || url.includes("mercadolibre.com")) {
+      platform = "mercadolivre";
+      const mercadoLivreService = new MercadoLivreService();
+      productData = await mercadoLivreService.scrapeProduct(url);
+    } else if (url.includes("amazon.com")) {
+      platform = "amazon";
+      const amazonService = new AmazonService();
+      productData = await amazonService.scrapeProduct(url);
+    } else {
+      return ctx.reply("❌ Plataforma não suportada para reprocessamento.");
+    }
+
+    if (!productData) {
+      return ctx.reply("❌ Erro ao buscar dados do produto. Tente novamente.");
+    }
+
+    // Analisar imagem
+    let analysis = null;
+    if (productData.imageUrl) {
+      try {
+        analysis = await imageAnalyzer.analyzeImage(productData.imageUrl);
+      } catch (error) {
+        console.log("⚠️ Erro ao analisar imagem, continuando sem análise");
+      }
+    }
+
+    // Gerar anúncio
+    const adGenerator = new AdGenerator();
+    const ad = adGenerator.generateAd(productData, platform, analysis);
+
+    // Salvar contexto do anúncio
+    sessionManager.set(userId, "lastGeneratedAd", ad);
+    sessionManager.set(userId, "userId", userId);
+    sessionManager.set(userId, "username", username);
+
+    // Enviar preview
+    if (ad.imageUrl) {
+      await ctx.replyWithPhoto(ad.imageUrl, {
+        caption: ad.text,
+        parse_mode: "Markdown",
+      });
+    } else {
+      await ctx.reply(ad.text, { parse_mode: "Markdown" });
+    }
+
+    // Perguntar se deseja enviar
+    await ctx.reply(
+      "✅ *Anúncio reprocessado!*\n\n" +
+        "Deseja adicionar à fila de postagem?\n\n" +
+        "• Digite *SIM* para adicionar à fila\n" +
+        "• Digite *NAO* para cancelar\n" +
+        "• Digite *AJUSTAR* para modificar",
+      { parse_mode: "Markdown" }
+    );
+
+    // Definir estado
+    sessionManager.setState(userId, "awaiting_confirmation");
+  } catch (error: any) {
+    console.error("❌ Erro ao reenviar anúncio:", error);
+    ctx.reply(
+      `❌ Erro ao reprocessar anúncio:\n\n` +
+        `${error.message}\n\n` +
+        `Tente novamente ou use /ver_erros para mais detalhes.`
+    );
+  }
+});
+
+// 📋 Atualizar comando /ver_erros para mostrar dica de reenvio individual
+bot.command("ver_erros", async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
+  }
+
+  try {
+    const failedAds = postQueueService.getFailedAds();
+
+    if (failedAds.length === 0) {
+      return ctx.reply("✅ Não há anúncios com erro na fila!");
+    }
+
+    let message = `⚠️ *Anúncios com Erro (${failedAds.length})*\n\n`;
+
+    failedAds.forEach((ad, index) => {
+      const errorMsg = ad.error || "Erro desconhecido";
+      const createdAt = ad.createdAt.toLocaleString("pt-BR");
+      const title = getAdTitle(ad.ad);
+      const link = getAdUrl(ad.ad);
+
+      message += `${index + 1}. *${title}*\n`;
+      message += `   ❌ Erro: \`${errorMsg}\`\n`;
+      message += `   📅 Criado: ${createdAt}\n`;
+      message += `   🔗 ${link}\n`;
+      message += `   💡 Use /erro${index + 1} para reenviar este anúncio\n\n`;
+    });
+
+    message += "\n🔄 *Opções de reenvio:*\n";
+    message += "• Use /erro1, /erro2, etc para reenviar individualmente\n";
+    message += "• Use /reenviar\\_erros para reenviar todos de uma vez";
+
+    ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error: any) {
+    ctx.reply(`❌ Erro: ${error.message}`);
+  }
 });

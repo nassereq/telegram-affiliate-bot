@@ -26,6 +26,7 @@
 #### ⏰ Sistema de Fila de Postagem
 
 - **Serviço de Fila (PostQueueService)**
+
   - Agendamento automático com intervalos configuráveis
   - Primeira postagem: 3 minutos após confirmação
   - Postagens subsequentes: intervalo de 5 minutos (padrão, configurável)
@@ -43,6 +44,7 @@
 #### 💬 Integração com WhatsApp
 
 - **WhatsAppService**
+
   - Integração completa com WhatsApp Web.js
   - Autenticação via QR Code (configuração única)
   - Persistência de sessão com LocalAuth (sem necessidade de QR repetido)
@@ -52,6 +54,7 @@
   - Gerenciamento de conexão e reconexão automática
 
 - **Arquitetura de Broadcaster**
+
   - Postagem simultânea em Telegram E WhatsApp
   - Rastreamento de status individual por plataforma
   - Fallback gracioso se WhatsApp desconectado
@@ -73,6 +76,7 @@
 ### 🔧 Detalhes Técnicos
 
 **Novos Arquivos Criados:**
+
 - `src/services/postQueue.ts` - Gerenciamento de fila (~320 linhas)
 - `src/services/whatsapp.ts` - Serviço WhatsApp (~200 linhas)
 - `src/services/broadcaster.ts` - Broadcaster multi-plataforma (~60 linhas)
@@ -80,11 +84,13 @@
 - `src/types/index.ts` - Interfaces QueuedAd, QueueConfig
 
 **Arquivos Modificados:**
+
 - `src/app.ts` - Adicionados 7 novos comandos, integração com fila
 - `src/utils/formatter.ts` - Simplificação do formato (apenas preço final)
 - `package.json` - Novas dependências
 
 **Fluxo de Postagem Atualizado:**
+
 1. Usuário envia link do produto
 2. Bot faz scraping e mostra preview
 3. Usuário confirma com "SIM"
@@ -103,6 +109,7 @@
 ### 🌐 Variáveis de Ambiente
 
 **Nova variável:**
+
 - `WHATSAPP_GROUP_ID` - ID do grupo WhatsApp para postagens
 
 ### 📊 Estatísticas

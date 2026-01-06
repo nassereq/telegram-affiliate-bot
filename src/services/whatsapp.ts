@@ -12,7 +12,12 @@ export class WhatsAppService {
   private qrCode: string = "";
 
   constructor() {
-    this.initialize();
+    // Verifica se WhatsApp está habilitado antes de inicializar
+    if (whatsappConfig.enabled) {
+      this.initialize();
+    } else {
+      console.log("⚠️ WhatsApp desabilitado. Use /whatsapp_toggle para ativar.");
+    }
   }
 
   /**
@@ -57,18 +62,22 @@ export class WhatsAppService {
       this.client.on("auth_failure", (msg) => {
         console.error("❌ Falha na autenticação do WhatsApp:", msg);
         this.isReady = false;
+        this.isInitializing = false;
       });
 
       // Evento: Cliente pronto
       this.client.on("ready", async () => {
         console.log("✅ WhatsApp conectado e pronto!");
         this.isReady = true;
+        this.isInitializing = false;
         this.qrCode = "";
 
         // Mostra informações do usuário
         const info = this.client?.info;
         if (info) {
-          console.log(`📱 Conta conectada: ${info.pushname} (${info.wid.user})`);
+          console.log(
+            `📱 Conta conectada: ${info.pushname} (${info.wid.user})`
+          );
         }
       });
 
@@ -76,6 +85,14 @@ export class WhatsAppService {
       this.client.on("disconnected", (reason) => {
         console.log("⚠️ WhatsApp desconectado:", reason);
         this.isReady = false;
+        this.isInitializing = false;
+      });
+
+      // Evento: Erro durante a execução
+      this.client.on("error", (error) => {
+        console.error("❌ Erro no WhatsApp:", error.message);
+        this.isReady = false;
+        this.isInitializing = false;
       });
 
       // Inicializa o cliente
@@ -83,9 +100,10 @@ export class WhatsAppService {
     } catch (error: any) {
       console.error("❌ Erro ao inicializar WhatsApp:", error.message);
       this.isReady = false;
-      throw error;
-    } finally {
       this.isInitializing = false;
+      
+      // Não joga erro para não parar o bot
+      console.log("⚠️ Bot continuará sem WhatsApp. Use /whatsapp_reconnect para tentar novamente.");
     }
   }
 
@@ -94,7 +112,9 @@ export class WhatsAppService {
    */
   async sendAd(ad: Ad, groupId?: string): Promise<boolean> {
     if (!this.isReady || !this.client) {
-      console.error("❌ WhatsApp não está pronto. Use /whatsapp_status para verificar.");
+      console.error(
+        "❌ WhatsApp não está pronto. Use /whatsapp_status para verificar."
+      );
       return false;
     }
 
@@ -124,7 +144,10 @@ export class WhatsAppService {
           console.log("✅ Anúncio com imagem enviado ao WhatsApp");
           return true;
         } catch (imageError: any) {
-          console.error("⚠️ Erro ao enviar imagem, enviando apenas texto:", imageError.message);
+          console.error(
+            "⚠️ Erro ao enviar imagem, enviando apenas texto:",
+            imageError.message
+          );
           // Fallback: envia apenas texto
           await this.client.sendMessage(chatId, ad.text);
           console.log("✅ Anúncio (apenas texto) enviado ao WhatsApp");

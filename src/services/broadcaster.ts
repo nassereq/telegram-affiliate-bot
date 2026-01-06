@@ -1,6 +1,7 @@
 import { Ad } from "../types";
 import telegramService from "./telegram";
 import whatsappService from "./whatsapp";
+import { whatsappConfig } from "../config/whatsapp.config";
 
 export interface BroadcastResult {
   telegram: boolean;
@@ -12,13 +13,26 @@ export class BroadcasterService {
   /**
    * Envia anúncio para Telegram E WhatsApp simultaneamente
    */
-  async broadcastAd(ad: Ad, telegramChatId?: string, whatsappGroupId?: string): Promise<BroadcastResult> {
+  async broadcastAd(
+    ad: Ad,
+    telegramChatId?: string,
+    whatsappGroupId?: string
+  ): Promise<BroadcastResult> {
     console.log("📡 Enviando anúncio para múltiplas plataformas...");
 
-    // Envia para ambas plataformas em paralelo
+    // Verifica se WhatsApp está habilitado
+    const shouldSendToWhatsApp = whatsappConfig.enabled;
+
+    if (!shouldSendToWhatsApp) {
+      console.log("ℹ️ WhatsApp desabilitado, enviando apenas para Telegram");
+    }
+
+    // Envia para plataformas (WhatsApp apenas se habilitado)
     const [telegramResult, whatsappResult] = await Promise.all([
       this.sendToTelegram(ad, telegramChatId),
-      this.sendToWhatsApp(ad, whatsappGroupId),
+      shouldSendToWhatsApp
+        ? this.sendToWhatsApp(ad, whatsappGroupId)
+        : Promise.resolve(false),
     ]);
 
     const result: BroadcastResult = {
@@ -30,6 +44,8 @@ export class BroadcasterService {
     // Log do resultado
     if (result.telegram && result.whatsapp) {
       console.log("✅ Anúncio enviado para Telegram e WhatsApp com sucesso!");
+    } else if (result.telegram && !shouldSendToWhatsApp) {
+      console.log("✅ Anúncio enviado para Telegram (WhatsApp desabilitado)");
     } else if (result.telegram) {
       console.log("⚠️ Anúncio enviado apenas para Telegram (WhatsApp falhou)");
     } else if (result.whatsapp) {
@@ -74,7 +90,7 @@ export class BroadcasterService {
   }> {
     try {
       const whatsappStatus = await whatsappService.getStatus();
-      
+
       return {
         telegram: true, // Telegram está sempre pronto (assumindo que iniciou)
         whatsapp: whatsappStatus.isReady,

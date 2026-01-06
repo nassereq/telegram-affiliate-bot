@@ -30,6 +30,9 @@ Thumbs.db
 # WhatsApp session data (contains authentication)
 whatsapp-session/
 
+# WhatsApp state
+whatsapp-state.json
+
 # Logs
 logs/
 *.log

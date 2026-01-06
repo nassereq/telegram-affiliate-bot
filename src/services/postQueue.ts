@@ -6,7 +6,7 @@ import * as path from "path";
 class PostQueueService {
   private queue: QueuedAd[] = [];
   private config: QueueConfig = {
-    intervalMinutes: 7, // Padrão: 5 minutos
+    intervalMinutes: 15, // ⬅️ ALTERADO: de 5 para 15 minutos
     isPaused: false,
     maxQueueSize: 50,
   };
@@ -160,6 +160,123 @@ class PostQueueService {
    */
   getConfig(): QueueConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Obtém anúncios com erro
+   */
+  getFailedAds(): QueuedAd[] {
+    return this.queue.filter((ad) => ad.status === "error");
+  }
+
+  /**
+   * Reenviar anúncios que falharam
+   */
+  async retryFailedAds(): Promise<{
+    total: number;
+    requeued: number;
+    failed: number;
+  }> {
+    const failedAds = this.getFailedAds();
+
+    if (failedAds.length === 0) {
+      return { total: 0, requeued: 0, failed: 0 };
+    }
+
+    console.log(`🔄 Reenviando ${failedAds.length} anúncio(s) com erro...`);
+
+    let requeued = 0;
+    let failed = 0;
+
+    // Calcular novo horário de agendamento
+    const pendingAds = this.getPendingAds();
+    const lastAd = pendingAds[pendingAds.length - 1];
+    const now = new Date();
+
+    let nextScheduledTime = lastAd
+      ? new Date(
+          lastAd.scheduledAt.getTime() + this.config.intervalMinutes * 60 * 1000
+        )
+      : new Date(now.getTime() + 3 * 60 * 1000);
+
+    for (const failedAd of failedAds) {
+      try {
+        // Reagendar o anúncio: mudar status para pending e atualizar horário
+        failedAd.status = "pending";
+        failedAd.scheduledAt = nextScheduledTime;
+        failedAd.error = undefined; // Limpar mensagem de erro
+
+        console.log(
+          `✅ Anúncio reagendado: ${failedAd.id} para ${nextScheduledTime.toLocaleString("pt-BR")}`
+        );
+
+        // Próximo anúncio será intervalMinutes depois
+        nextScheduledTime = new Date(
+          nextScheduledTime.getTime() + this.config.intervalMinutes * 60 * 1000
+        );
+
+        requeued++;
+      } catch (error: any) {
+        console.error(`❌ Erro ao reagendar ${failedAd.id}:`, error.message);
+        failed++;
+      }
+    }
+
+    this.saveQueue();
+
+    return {
+      total: failedAds.length,
+      requeued,
+      failed,
+    };
+  }
+
+  /**
+   * Reenviar um anúncio específico por ID
+   */
+  async retryAdById(adId: string): Promise<boolean> {
+    const ad = this.queue.find((a) => a.id === adId);
+
+    if (!ad) {
+      console.error(`❌ Anúncio ${adId} não encontrado`);
+      return false;
+    }
+
+    if (ad.status !== "error") {
+      console.log(
+        `⚠️ Anúncio ${adId} não está com erro (status: ${ad.status})`
+      );
+      return false;
+    }
+
+    try {
+      // Calcular novo horário de agendamento
+      const pendingAds = this.getPendingAds();
+      const lastAd = pendingAds[pendingAds.length - 1];
+      const now = new Date();
+
+      const scheduledAt = lastAd
+        ? new Date(
+            lastAd.scheduledAt.getTime() +
+              this.config.intervalMinutes * 60 * 1000
+          )
+        : new Date(now.getTime() + 3 * 60 * 1000);
+
+      // Reagendar o anúncio
+      ad.status = "pending";
+      ad.scheduledAt = scheduledAt;
+      ad.error = undefined;
+
+      this.saveQueue();
+
+      console.log(
+        `✅ Anúncio reagendado: ${ad.id} para ${scheduledAt.toLocaleString("pt-BR")}`
+      );
+      return true;
+    } catch (error: any) {
+      console.error(`❌ Erro ao reagendar ${adId}:`, error.message);
+      return false;
+    }
   }
 
   /**

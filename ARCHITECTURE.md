@@ -121,24 +121,27 @@ telegram-affiliate-bot/
 ### **Queue System - Fluxo Detalhado**
 
 1. **Entrada do Usuário**
+
    - Usuário envia link do produto
    - Bot faz scraping (Mercado Livre ou Amazon)
    - Exibe preview do anúncio
 
 2. **Confirmação e Agendamento**
+
    - Usuário confirma com "SIM"
    - `postQueue.addToQueue()` é chamado
    - Calcula `scheduledAt`:
-     * Se fila vazia: `now + 3 minutos`
-     * Se há fila: `último scheduledAt + intervalMinutes`
+     - Se fila vazia: `now + 3 minutos`
+     - Se há fila: `último scheduledAt + intervalMinutes`
 
 3. **Processamento Automático**
+
    - Timer executa `processQueue()` a cada 30 segundos
    - Filtra ads com `status: "pending"` e `scheduledAt <= now`
    - Para cada ad pendente:
-     * Chama `broadcaster.broadcastAd()`
-     * Atualiza status para "posted" ou "error"
-     * Persiste em `queue.json`
+     - Chama `broadcaster.broadcastAd()`
+     - Atualiza status para "posted" ou "error"
+     - Persiste em `queue.json`
 
 4. **Persistência**
    - Toda alteração salva em `queue.json`
@@ -163,12 +166,14 @@ telegram-affiliate-bot/
 ```
 
 **Autenticação WhatsApp:**
+
 1. Primeira execução: exibe QR code no terminal
 2. Usuário escaneia com WhatsApp mobile
 3. Sessão salva em `whatsapp-session/`
 4. Próximas execuções: carrega sessão automaticamente
 
 **Envio de Mensagem:**
+
 1. Formata texto do anúncio
 2. Baixa imagem do produto (axios)
 3. Converte para Buffer com Sharp
@@ -349,6 +354,7 @@ getQueueStatus(): { pending: QueuedAd[], config: QueueConfig }
 ```
 
 **Fluxo:**
+
 1. `addToQueue()` → calcula scheduledAt
 2. Timer 30s → `processQueue()` verifica ads prontos
 3. scheduledAt <= now → chama broadcaster
@@ -382,12 +388,14 @@ isConnected(): boolean
 ```
 
 **Eventos Gerenciados:**
+
 - `qr` → Exibe QR code no terminal
 - `ready` → WhatsApp conectado
 - `authenticated` → Sessão autenticada
 - `disconnected` → Tentativa de reconexão
 
 **Autenticação:**
+
 ```typescript
 new Client({
   authStrategy: new LocalAuth({
@@ -426,13 +434,14 @@ getStatus(): string
 ```
 
 **Lógica:**
+
 ```typescript
 // Tenta ambas plataformas
-telegram = await telegramService.sendAd(ad)
-whatsapp = await whatsappService.sendAd(ad) // se conectado
+telegram = await telegramService.sendAd(ad);
+whatsapp = await whatsappService.sendAd(ad); // se conectado
 
 // Sucesso se pelo menos uma funcionar
-success = telegram || whatsapp
+success = telegram || whatsapp;
 ```
 
 ---

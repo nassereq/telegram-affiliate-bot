@@ -5,7 +5,8 @@ interface UserSession {
     | "waiting_product_link"
     | "waiting_confirmation"
     | "waiting_manual_edit"
-    | "waiting_coupon";
+    | "waiting_coupon"
+    | "awaiting_retry_confirmation";
   productData?: ProductData;
   productUrl?: string;
   timestamp: number;
@@ -71,6 +72,26 @@ class SessionManager {
     if (session) {
       Object.assign(session, updates);
       session.timestamp = Date.now();
+    }
+  }
+
+  /**
+   * Define o estado da sessão do usuário
+   */
+  setState(
+    userId: number,
+    step: UserSession["step"]
+  ): void {
+    const session = this.getSession(userId);
+    if (session) {
+      session.step = step;
+      session.timestamp = Date.now();
+    } else {
+      // Criar nova sessão se não existir
+      this.sessions.set(userId, {
+        step,
+        timestamp: Date.now(),
+      });
     }
   }
 
