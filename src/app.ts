@@ -4,14 +4,16 @@ import telegramService from "./services/telegram";
 import ImageAnalyzer from "./services/imageAnalysis";
 import AdGenerator from "./controllers/adGenerator";
 import MercadoLivreService from "./services/mercadoLivre";
-import AmazonService from "./services/amazon";
 import postQueueService from "./services/postQueue";
 import whatsappService from "./services/whatsapp";
+import broadcasterService from "./services/broadcaster";
+import titleOptimizerService from "./services/titleOptimizer";
 import sessionManager from "./utils/sessionManager";
 import platformManager from "./platforms/platformManager";
 import { formatProductAd } from "./utils/formatter";
 import { isValidProductData, isValidUrl } from "./utils/validator";
 import { APP_CONFIG, validateConfig } from "./config/config";
+import { Ad } from "./types";
 
 // Valida configuração antes de iniciar
 try {
@@ -170,6 +172,9 @@ bot.help((ctx) => {
       "/intervalo [min] - Configurar intervalo (ex: /intervalo 15)\n" +
       "/pausar - Pausar/retomar fila\n" +
       "/limpar - Limpar fila\n" +
+      "/ver\\_erros - Ver anúncios com erro\n" +
+      "/erro1, /erro2... - Reenviar erro específico\n" +
+      "/titulo\\_criativo - Ativar títulos criativos com IA\n" +
       "/cancelar - Cancelar operação atual\n" +
       "/help - Ver ajuda",
     { parse_mode: "Markdown" }
@@ -472,6 +477,165 @@ bot.command("status", async (ctx) => {
   }
 });
 
+// 🔄 Comando: Reenviar erro específico (/erro1, /erro2, etc)
+bot.hears(/^\/erro(\d+)$/i, async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
+  }
+
+  try {
+    const match = ctx.message.text.match(/^\/erro(\d+)$/i);
+    if (!match) return;
+
+    const errorIndex = parseInt(match[1]) - 1;
+    const failedAds = postQueueService.getFailedAds();
+
+    if (errorIndex < 0 || errorIndex >= failedAds.length) {
+      return ctx.reply(
+        `❌ Erro #${errorIndex + 1} não encontrado.\n\n` +
+        `Use /ver_erros para ver a lista completa.`
+      );
+    }
+
+    const failedAd = failedAds[errorIndex];
+    const url = getAdUrl(failedAd.ad);
+
+    if (!url) {
+      return ctx.reply(
+        `❌ Não foi possível extrair a URL do anúncio.\n\n` +
+        `Use /ver_erros para verificar os detalhes.`
+      );
+    }
+
+    await ctx.reply(
+      `🔄 Reprocessando anúncio #${errorIndex + 1}...\n\n` +
+      `📎 Link: ${url}\n\n` +
+      `⏳ Aguarde enquanto busco as informações...`
+    );
+
+    const userId = ctx.from!.id;
+    const username = ctx.from!.username || ctx.from!.first_name;
+
+    // Remover o anúncio com erro
+    postQueueService.removeFromQueue(failedAd.id);
+
+    // Processar URL (scraping)
+    const result = await platformManager.scrapeProduct(url);
+
+    if (!result || !result.title) {
+      return ctx.reply(`❌ Erro ao buscar dados do produto.`);
+    }
+
+    // Formatar anúncio
+    const ad = formatProductAd(result);
+
+    // Salvar na sessão
+    sessionManager.updateSession(userId, {
+      step: "waiting_confirmation",
+      productData: result,
+      productUrl: url,
+    });
+
+    // Enviar preview
+    if (ad.imageUrl) {
+      await ctx.replyWithPhoto(ad.imageUrl, {
+        caption: ad.text,
+        parse_mode: ad.parseMode,
+      });
+    } else {
+      await ctx.reply(ad.text, { parse_mode: ad.parseMode });
+    }
+
+    await ctx.reply(
+      "✅ *Anúncio reprocessado!*\n\n" +
+      "Deseja adicionar à fila de postagem?\n\n" +
+      "• Digite *SIM* para adicionar à fila\n" +
+      "• Digite *NAO* para cancelar",
+      { parse_mode: "Markdown" }
+    );
+
+    sessionManager.setState(userId, "waiting_confirmation");
+
+  } catch (error: any) {
+    console.error("❌ Erro ao reenviar anúncio:", error);
+    ctx.reply(
+      `❌ Erro ao reprocessar anúncio:\n\n` +
+      `${error.message}\n\n` +
+      `Tente novamente ou use /ver_erros para mais detalhes.`
+    );
+  }
+});
+
+// 🎨 Comando: Ativar/desativar otimização de título
+bot.command("titulo_criativo", async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
+  }
+
+  const userId = ctx.from!.id;
+  const session = sessionManager.getSession(userId);
+  const currentSetting = session?.optimizeTitle || false;
+  const newSetting = !currentSetting;
+
+  sessionManager.updateSession(userId, {
+    ...session,
+    optimizeTitle: newSetting,
+  });
+
+  const status = newSetting ? "✅ ATIVADA" : "❌ DESATIVADA";
+  const emoji = newSetting ? "🎨" : "📝";
+
+  await ctx.reply(
+    `${emoji} *Otimização de Título ${status}*\n\n` +
+    `${newSetting 
+      ? "✨ Os próximos anúncios terão títulos criativos gerados por IA!\n\n" +
+        "💡 Exemplo:\n" +
+        "*Original:* Tênis Nike Air Max 2024\n" +
+        "*Otimizado:* Tênis Nike Air Max 2024 ⚡\n" +
+        "Tecnologia Air que você ama\n" +
+        "Lançamento com desconto limitado"
+      : "📝 Os próximos anúncios usarão títulos originais do produto."
+    }`,
+    { parse_mode: "Markdown" }
+  );
+});
+
+// 📋 Comando: Ver erros (atualizado com dica de reenvio individual)
+bot.command("ver_erros", async (ctx) => {
+  if (!isAuthorized(ctx)) {
+    return ctx.reply("❌ Acesso negado");
+  }
+
+  try {
+    const failedAds = postQueueService.getFailedAds();
+
+    if (failedAds.length === 0) {
+      return ctx.reply("✅ Não há anúncios com erro na fila!");
+    }
+
+    let message = `⚠️ *Anúncios com Erro (${failedAds.length})*\n\n`;
+
+    failedAds.forEach((ad, index) => {
+      const errorMsg = ad.error || "Erro desconhecido";
+      const title = getAdTitle(ad.ad);
+      const link = getAdUrl(ad.ad);
+
+      message += `${index + 1}. *${title}*\n`;
+      message += `   ❌ ${errorMsg}\n`;
+      message += `   🔗 ${link}\n`;
+      message += `   💡 Use /erro${index + 1} para reenviar\n\n`;
+    });
+
+    message += "\n🔄 *Opções de reenvio:*\n";
+    message += "• Use /erro1, /erro2, etc para reenviar individualmente\n";
+    message += "• Use /reenviar\\_erros para reenviar todos de uma vez";
+
+    ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error: any) {
+    ctx.reply(`❌ Erro: ${error.message}`);
+  }
+});
+
 // Handler para mensagens de texto
 bot.on("text", async (ctx) => {
   const userId = ctx.from?.id;
@@ -552,8 +716,42 @@ bot.on("text", async (ctx) => {
             isFlashDeal: isFlashDeal,
           };
 
-          // Formatar anúncio
-          const ad = formatProductAd(productData);
+          // Verificar se otimização de título está ativada
+          const currentSession = sessionManager.getSession(userId);
+          const optimizeTitle = currentSession?.optimizeTitle || false;
+          let ad;
+
+          if (optimizeTitle) {
+            await ctx.reply("🎨 Gerando título criativo...");
+            
+            // Detectar plataforma do URL
+            let platform: "mercadolivre" | "amazon" = "mercadolivre";
+            if (urlLine.includes("amazon")) {
+              platform = "amazon";
+            }
+            
+            // Otimizar título
+            const optimizedTitle = await titleOptimizerService.optimizeTitle(
+              scrapedData.title,
+              {
+                discountPrice: scrapedData.discountPrice,
+                originalPrice: scrapedData.originalPrice,
+                discountPercentage: scrapedData.discountPercentage,
+                platform: platform,
+              }
+            );
+
+            // Criar ProductData com título otimizado
+            const optimizedProductData = {
+              ...productData,
+              title: optimizedTitle,
+            };
+
+            ad = formatProductAd(optimizedProductData);
+          } else {
+            // Formatar anúncio normal
+            ad = formatProductAd(productData);
+          }
 
           // Salvar na sessão e aguardar confirmação
           sessionManager.updateSession(userId, {
@@ -985,121 +1183,6 @@ bot.command("ver_erros", async (ctx) => {
   }
 });
 
-// 🔄 Comando: Reenviar erro específico (/erro1, /erro2, etc)
-bot.hears(/^\/erro(\d+)$/i, async (ctx) => {
-  if (!isAuthorized(ctx)) {
-    return ctx.reply("❌ Acesso negado");
-  }
-
-  try {
-    const match = ctx.message.text.match(/^\/erro(\d+)$/i);
-    if (!match) return;
-
-    const errorIndex = parseInt(match[1]) - 1; // Converter para índice (base 0)
-    const failedAds = postQueueService.getFailedAds();
-
-    if (errorIndex < 0 || errorIndex >= failedAds.length) {
-      return ctx.reply(
-        `❌ Erro #${errorIndex + 1} não encontrado.\n\n` +
-          `Use /ver_erros para ver a lista completa.`
-      );
-    }
-
-    const failedAd = failedAds[errorIndex];
-    const url = getAdUrl(failedAd.ad);
-
-    if (!url) {
-      return ctx.reply(
-        `❌ Não foi possível extrair a URL do anúncio.\n\n` +
-          `Use /ver_erros para verificar os detalhes.`
-      );
-    }
-
-    // Notificar que está reprocessando
-    await ctx.reply(
-      `🔄 Reprocessando anúncio #${errorIndex + 1}...\n\n` +
-        `📎 Link: ${url}\n\n` +
-        `⏳ Aguarde enquanto busco as informações...`
-    );
-
-    // Guardar informações do usuário
-    const userId = ctx.from!.id;
-    const username = ctx.from!.username || ctx.from!.first_name;
-
-    // Remover o anúncio com erro da fila
-    postQueueService.removeFromQueue(failedAd.id);
-
-    // Processar como se fosse um novo link
-    // Detectar plataforma
-    let productData;
-    let platform: "mercadolivre" | "amazon";
-
-    if (url.includes("mercadolivre.com") || url.includes("mercadolibre.com")) {
-      platform = "mercadolivre";
-      const mercadoLivreService = new MercadoLivreService();
-      productData = await mercadoLivreService.scrapeProduct(url);
-    } else if (url.includes("amazon.com")) {
-      platform = "amazon";
-      const amazonService = new AmazonService();
-      productData = await amazonService.scrapeProduct(url);
-    } else {
-      return ctx.reply("❌ Plataforma não suportada para reprocessamento.");
-    }
-
-    if (!productData) {
-      return ctx.reply("❌ Erro ao buscar dados do produto. Tente novamente.");
-    }
-
-    // Analisar imagem
-    let analysis = null;
-    if (productData.imageUrl) {
-      try {
-        analysis = await imageAnalyzer.analyzeImage(productData.imageUrl);
-      } catch (error) {
-        console.log("⚠️ Erro ao analisar imagem, continuando sem análise");
-      }
-    }
-
-    // Gerar anúncio
-    const adGenerator = new AdGenerator();
-    const ad = adGenerator.generateAd(productData, platform, analysis);
-
-    // Salvar contexto do anúncio
-    sessionManager.set(userId, "lastGeneratedAd", ad);
-    sessionManager.set(userId, "userId", userId);
-    sessionManager.set(userId, "username", username);
-
-    // Enviar preview
-    if (ad.imageUrl) {
-      await ctx.replyWithPhoto(ad.imageUrl, {
-        caption: ad.text,
-        parse_mode: "Markdown",
-      });
-    } else {
-      await ctx.reply(ad.text, { parse_mode: "Markdown" });
-    }
-
-    // Perguntar se deseja enviar
-    await ctx.reply(
-      "✅ *Anúncio reprocessado!*\n\n" +
-        "Deseja adicionar à fila de postagem?\n\n" +
-        "• Digite *SIM* para adicionar à fila\n" +
-        "• Digite *NAO* para cancelar\n" +
-        "• Digite *AJUSTAR* para modificar",
-      { parse_mode: "Markdown" }
-    );
-
-    // Definir estado
-    sessionManager.setState(userId, "awaiting_confirmation");
-  } catch (error: any) {
-    console.error("❌ Erro ao reenviar anúncio:", error);
-    ctx.reply(
-      `❌ Erro ao reprocessar anúncio:\n\n` +
-        `${error.message}\n\n` +
-        `Tente novamente ou use /ver_erros para mais detalhes.`
-    );
-  }
-});
 
 // 📋 Atualizar comando /ver_erros para mostrar dica de reenvio individual
 bot.command("ver_erros", async (ctx) => {

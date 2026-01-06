@@ -9,6 +9,7 @@ interface UserSession {
     | "awaiting_retry_confirmation";
   productData?: ProductData;
   productUrl?: string;
+  optimizeTitle?: boolean;
   timestamp: number;
 }
 
