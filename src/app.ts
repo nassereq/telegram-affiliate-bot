@@ -164,8 +164,11 @@ bot.help((ctx) => {
       "*Fluxo de criação de anúncio:*\n\n" +
       "1. Envie o link de afiliado do produto\n" +
       "2. O bot fará scraping dos dados\n" +
-      "3. Confirme com SIM para adicionar à fila\n" +
-      "4. Os anúncios serão postados automaticamente\n\n" +
+      "3. Personalize (opcional):\n" +
+      "   • *T: título criativo* - Customizar título\n" +
+      "   • *CUPOM* - Adicionar cupom de desconto\n" +
+      "4. Confirme com SIM para adicionar à fila\n" +
+      "5. Os anúncios serão postados automaticamente\n\n" +
       "*Comandos disponíveis:*\n" +
       "/start - Iniciar\n" +
       "/fila - Ver fila de postagens\n" +
@@ -762,7 +765,7 @@ bot.on("text", async (ctx) => {
 
           // Mostrar preview e pedir confirmação
           await ctx.reply(
-            `✅ *Produto analisado!* (${scrapedData.platform})\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar\n\n💡 _Ou digite um cupom em MAIÚSCULAS (ex: VALEPROMO)_`,
+            `✅ *Produto analisado!* (${scrapedData.platform})\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar\n• *T: título criativo* - Customizar título\n\n💡 _Ou digite um cupom em MAIÚSCULAS (ex: VALEPROMO)_`,
             { parse_mode: "Markdown" }
           );
         } else {
@@ -869,6 +872,33 @@ bot.on("text", async (ctx) => {
       sessionManager.clearSession(userId);
       sessionManager.startSession(userId);
     }
+    // 🆕 Se digitar T: título personalizado
+    else if (originalText.toUpperCase().startsWith("T:")) {
+      const customTitle = originalText.substring(2).trim();
+
+      if (customTitle.length > 0 && session.productData) {
+        // Atualizar título do produto
+        session.productData.title = customTitle;
+
+        // Formatar anúncio com novo título
+        const ad = formatProductAd(session.productData);
+
+        await ctx.reply(
+          `🎨 *Título personalizado aplicado!*\n\n${ad.text}\n\n👉 Escolha uma opção:\n• *SIM* - Publicar assim\n• *NAO* - Cancelar\n• *AJUSTAR* - Editar antes de publicar\n• Digite outro *T: novo título* para alterar novamente\n\n💡 _Ou digite um cupom em MAIÚSCULAS (ex: VALEPROMO)_`,
+          { parse_mode: "Markdown" }
+        );
+
+        // Continuar em waiting_confirmation
+        sessionManager.updateSession(userId, {
+          step: "waiting_confirmation",
+        });
+      } else {
+        await ctx.reply(
+          "❌ Título vazio. Use o formato: *T: seu título criativo aqui*",
+          { parse_mode: "Markdown" }
+        );
+      }
+    }
     // 🆕 Se digitar texto em MAIÚSCULAS (que não seja SIM/NAO/AJUSTAR), é um cupom
     else if (
       originalText === originalText.toUpperCase() &&
@@ -920,7 +950,7 @@ bot.on("text", async (ctx) => {
       }
     } else {
       await ctx.reply(
-        "❓ Responda com *SIM*, *NAO*, *AJUSTAR* ou digite um cupom em MAIÚSCULAS.",
+        "❓ Responda com *SIM*, *NAO*, *AJUSTAR*, *T: título criativo* ou digite um cupom em MAIÚSCULAS.",
         {
           parse_mode: "Markdown",
         }

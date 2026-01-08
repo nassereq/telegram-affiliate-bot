@@ -1,284 +1,330 @@
 {
   "queue": [
     {
-      "id": "ad_1766063932932_iceq1jp44",
+      "id": "ad_1766862092015_6t1a7h2xo",
       "ad": {
-        "text": "👟 Sapateira Vertical Empilhável Caixa Sapato Tênis\n\nDe ❌ R$ 225\nPor 🔥 R$ 117\n\n✔️ CUPOM: RESGATEMELI\n\n🔗 https://mercadolivre.com/sec/26V8XhL",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_772182-MLA96103895609_102025-O.webp"
+        "text": "👟 Tênis Fila Masculino Esportivo Racer Fastpace\n\nDe ❌ R$ 714\nPor 🔥 R$ 349\n\n🔗 https://mercadolivre.com/sec/2ynNp9n",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_663924-MLB99342253524_112025-O.webp"
       },
       "userId": 8417227551,
       "username": "NascimentoClara",
-      "createdAt": "2025-12-18T13:18:52.932Z",
-      "scheduledAt": "2025-12-18T13:21:52.932Z",
+      "createdAt": "2025-12-27T19:01:32.015Z",
+      "scheduledAt": "2025-12-27T21:11:45.536Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1766949972530_xt2sfoxdw",
+      "ad": {
+        "text": "⚡️ Piscina Inflável Fun Redonda 1400l Kit\n\nDe ❌ R$ 279\nPor 🔥 R$ 159\n\n🔗 https://mercadolivre.com/sec/246MyZ2",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_601668-MLA99513235078_112025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-28T19:26:12.530Z",
+      "scheduledAt": "2025-12-28T20:27:47.005Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1766949988874_jbzm3yqou",
+      "ad": {
+        "text": "⚡️ Ar condicionado Electrolux Split Inverter 9\\.000\n\nDe ❌ R$ 2879\nPor 🔥 R$ 1859\n\n🔗 https://mercadolivre.com/sec/1mLf5Mz",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_644152-MLA99477090492_112025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-28T19:26:28.874Z",
+      "scheduledAt": "2025-12-28T20:42:47.005Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1766950024644_cbxky1kjy",
+      "ad": {
+        "text": "🏠 Jogo Lençol Elástico Casal Padrão Box\n\nDe ❌ R$ 59\nPor 🔥 R$ 31\n\n🔗 https://mercadolivre.com/sec/2d5u5TU",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_862464-MLB71064179555_082023-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-28T19:27:04.644Z",
+      "scheduledAt": "2025-12-28T20:57:47.005Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1766950031819_310gpf0ql",
+      "ad": {
+        "text": "⚡️ Creatina Monohidratada 1kg Soldiers Nutrition 100%\n\nDe ❌ R$ 239\nPor 🔥 R$ 68\n\n🔗 https://mercadolivre.com/sec/1NbvptZ",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_736821-MLA99962382095_112025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-28T19:27:11.819Z",
+      "scheduledAt": "2025-12-28T21:12:47.005Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1766950162395_h0byic0qb",
+      "ad": {
+        "text": "⚡️ Aspirador Pó Vertical Portátil Wap High\n\nDe ❌ R$ 207\nPor 🔥 R$ 139\n\n🔗 https://mercadolivre.com/sec/2WgLTvv",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_887734-MLA99375017938_112025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-28T19:29:22.395Z",
+      "scheduledAt": "2025-12-28T21:27:47.005Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1766950272940_vhsf14ype",
+      "ad": {
+        "text": "⚡️ Repetidor Sinal Wifi Amplificador Bahrein Potente\n\nDe ❌ R$ 60\nPor 🔥 R$ 41\n\n🔗 https://mercadolivre.com/sec/2QCyCK2",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_740002-MLA99597011660_122025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-28T19:31:12.940Z",
+      "scheduledAt": "2025-12-28T21:42:47.005Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767046895931_1rf9u6rru",
+      "ad": {
+        "text": "🛏️ Caixa Som Bluetooth Partybox Encore Essencial\n\nDe ❌ R$ 1873\nPor 🔥 R$ 1348\n\n🔗 https://mercadolivre.com/sec/2gpgofj",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_709377-MLA99442024016_112025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-29T22:21:35.931Z",
+      "scheduledAt": "2025-12-29T23:08:31.186Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767047255904_t03a5mrjt",
+      "ad": {
+        "text": "🏠 Vittak Tapete Escorredor Louça Em Silicone\n\nDe ❌ R$ 30\nPor 🔥 R$ 22\n\n🔗 https://mercadolivre.com/sec/1xfcg5H",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_856178-MLA99611035824_122025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-29T22:27:35.904Z",
+      "scheduledAt": "2025-12-30T00:38:31.186Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767113354694_liuqwx32y",
+      "ad": {
+        "text": "⚡️ Chaleira Elétrica Inox Elgin - Jarra\n\nPor 🔥 R$ 49\n\n🔗 https://amzn.to/49yKapW",
+        "imageUrl": "https://m.media-amazon.com/images/I/61VnOacVPpL._AC_SY300_SX300_QL70_ML2_.jpg"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-30T16:49:14.694Z",
+      "scheduledAt": "2025-12-30T17:06:36.990Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767113407303_tk3c0zh9d",
+      "ad": {
+        "text": "📱 PHILIPS, Fone de Ouvido Sem Fio\n\nDe ❌ R$ 144\nPor 🔥 R$ 132\n\n🔗 https://amzn.to/3MQw5LZ",
+        "imageUrl": "https://m.media-amazon.com/images/I/519bjoeFBTL._AC_SY300_SX300_QL70_ML2_.jpg"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2025-12-30T16:50:07.303Z",
+      "scheduledAt": "2025-12-30T17:36:36.990Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767624585172_3odp4chpt",
+      "ad": {
+        "text": "⚡️ Câmera Segurança Lâmpada Soquete Wifi Visão\n\nDe ❌ R$ 78\nPor 🔥 R$ 41\n\n✔️ CUPOM: CHEGUEI\n Para compras acima de R$79\n\n🔗 https://mercadolivre.com/sec/2RWB3dD",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_736820-MLA96163134303_102025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-05T14:49:45.172Z",
+      "scheduledAt": "2026-01-05T15:20:43.378Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767624869029_nnq5earbr",
+      "ad": {
+        "text": "⚡️ Soprador Folhas Resíduos Elétrico 2000w Para\n\nDe ❌ R$ 367\nPor 🔥 R$ 169\n\n✔️ CUPOM: CHEGUEI\n\n🔗 https://mercadolivre.com/sec/1J4DdtD",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_601377-MLU79134311821_092024-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-05T14:54:29.029Z",
+      "scheduledAt": "2026-01-05T16:35:43.378Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767625071927_z7bzd9fxn",
+      "ad": {
+        "text": "⚡️ Creatina Monohidratada 250g Growth Supplements Sem\n\nDe ❌ R$ 62\nPor 🔥 R$ 39\n\n🔗 https://mercadolivre.com/sec/1osK1mE",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_662415-MLA97812910758_112025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-05T14:57:51.927Z",
+      "scheduledAt": "2026-01-05T17:20:43.378Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767625121132_web87k2qq",
+      "ad": {
+        "text": "🛏️ Roku Streaming Stick Tvbox Aparelho Transforma\n\nDe ❌ R$ 341\nPor 🔥 R$ 160\n\n✔️ CUPOM: CHEGUEI\n\n🔗 https://mercadolivre.com/sec/2BXxzSt",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_947612-MLA99369632726_112025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-05T14:58:41.132Z",
+      "scheduledAt": "2026-01-05T17:50:43.378Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767625171876_vamskypx7",
+      "ad": {
+        "text": "🍳 Frigideira Cerâmica Antiaderente Grande Fogão A\n\nDe ❌ R$ 131\nPor 🔥 R$ 50\n\n✔️ CUPOM: CHEGUEI\n Para compras acima de R$79\n\n🔗 https://mercadolivre.com/sec/1hz7BHb",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_987811-MLA95696773330_102025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-05T14:59:31.876Z",
+      "scheduledAt": "2026-01-05T18:35:43.378Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767651814559_159pqv5pm",
+      "ad": {
+        "text": "⚡️ Chaleira Elétrica Inox Elgin - Jarra\n\nPor 🔥 R$ 49\n\n🔗 https://amzn.to/4qJfoAO",
+        "imageUrl": "https://m.media-amazon.com/images/I/61VnOacVPpL._AC_SY300_SX300_QL70_ML2_.jpg"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-05T22:23:34.559Z",
+      "scheduledAt": "2026-01-05T23:09:35.905Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767651948798_37joevz3l",
+      "ad": {
+        "text": "🍳 Frigideira Cerâmica Antiaderente Grande Fogão A\n\nDe ❌ R$ 131\nPor 🔥 R$ 53\n\n✔️ CUPOM: VALEDEZ\n Para compras acima de R$79\n\n🔗 https://mercadolivre.com/sec/1hz7BHb",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_987811-MLA95696773330_102025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-05T22:25:48.798Z",
+      "scheduledAt": "2026-01-05T23:54:35.905Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767652396266_27mj77hj0",
+      "ad": {
+        "text": "⚡️ Mini Compressor Ar Calibrador Encher Pneu\n\nDe ❌ R$ 165\nPor 🔥 R$ 116\n\n✔️ CUPOM: VALEDEZ\n\n🔗 https://mercadolivre.com/sec/1ZUoji9",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_847949-MLB94330460424_102025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-05T22:33:16.266Z",
+      "scheduledAt": "2026-01-06T00:39:35.905Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767726817813_y1pqy05at",
+      "ad": {
+        "text": "⌚️ Relógio Smartwatch Qcy Watch Gtc S1\n\nDe ❌ R$ 249\nPor 🔥 R$ 134\n\n✔️ CUPOM: VALEDEZ\n\n🔗 https://mercadolivre.com/sec/1tGh4rr",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_850661-MLA100021137831_122025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-06T19:13:37.813Z",
+      "scheduledAt": "2026-01-06T19:58:44.552Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767726873246_p5q6ltjdl",
+      "ad": {
+        "text": "⚡️ Babá Eletrônica Vlx Vb603 Sem Fio\n\nDe ❌ R$ 343\nPor 🔥 R$ 208\n\n✔️ CUPOM: VALEDEZ\n\n🔗 https://mercadolivre.com/sec/2TLUvPX",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_660207-MLA99510217556_112025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-06T19:14:33.246Z",
+      "scheduledAt": "2026-01-06T20:43:44.552Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
+    },
+    {
+      "id": "ad_1767807540358_2w8j4rh5j",
+      "ad": {
+        "text": "👟 Conforto para o dia a dia!!!\n\nTênis New Balance Original\n\nDe ❌ R$ 395\nPor 🔥 R$ 203\n\n✔️ CUPOM: AGORADESCONTO\n\n🔗 https://mercadolivre.com/sec/2DWNNMy",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_921710-MLB96605892565_102025-O.webp"
+      },
+      "userId": 8417227551,
+      "username": "NascimentoClara",
+      "createdAt": "2026-01-07T17:39:00.358Z",
+      "scheduledAt": "2026-01-07T17:42:00.358Z",
       "status": "posted"
     },
     {
-      "id": "ad_1766063947205_bhci0qfvs",
+      "id": "ad_1767807717535_8viuqfvcd",
       "ad": {
-        "text": "⚡️ Whey Pro Baunilha Max Titanium Protein\n\nDe ❌ R$ 104\nPor 🔥 R$ 71\n\n✔️ CUPOM: RESGATEMELI\n\n🔗 https://mercadolivre.com/sec/2ekiQQT",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_694824-MLA99490288786_112025-O.webp"
+        "text": "⚽️ Melhoria nos treinos e na memória \n\nCreatina Monohidratada 500g 100% Pura da 3VS\n\nDe ❌ R$ 97\nPor 🔥 R$ 38\n\n🔗 https://mercadolivre.com/sec/2WUnzHq",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_816758-MLA97552844798_112025-O.webp"
       },
       "userId": 8417227551,
       "username": "NascimentoClara",
-      "createdAt": "2025-12-18T13:19:07.205Z",
-      "scheduledAt": "2025-12-18T13:26:52.932Z",
+      "createdAt": "2026-01-07T17:41:57.535Z",
+      "scheduledAt": "2026-01-07T17:57:00.358Z",
       "status": "posted"
     },
     {
-      "id": "ad_1766063978396_92c7qg97v",
+      "id": "ad_1767807989871_960votkyz",
       "ad": {
-        "text": "⚡️ Console Playstation 5 Slim Edição Digital\n\nDe ❌ R$ 5950\nPor 🔥 R$ 2668\n\n✔️ CUPOM: VEMCOMTUDO\n\n🔗 https://mercadolivre.com/sec/1bpeqyV",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_677584-MLA99572203884_122025-O.webp"
+        "text": "⚡️ Ótimo para Homeoffice e PC Gamers!!\n\nEscrivaninha de Canto em L\n\nDe ❌ R$ 399\nPor 🔥 R$ 215\n\n✔️ CUPOM: VALEDEZ\n\n🔗 https://mercadolivre.com/sec/2yKrKBT",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_730997-MLA97917138200_112025-O.webp"
       },
       "userId": 8417227551,
       "username": "NascimentoClara",
-      "createdAt": "2025-12-18T13:19:38.396Z",
-      "scheduledAt": "2025-12-18T13:31:52.932Z",
-      "status": "posted"
+      "createdAt": "2026-01-07T17:46:29.871Z",
+      "scheduledAt": "2026-01-07T18:12:00.358Z",
+      "status": "error",
+      "error": "Erro ao enviar para Telegram e WhatsApp"
     },
     {
-      "id": "ad_1766064000405_h4i2ftrbb",
+      "id": "ad_1767808454548_d8fs1qxe3",
       "ad": {
-        "text": "🧴 Kaiak Ultra Natura Colônia Perfume Masculino\n\nDe ❌ R$ 185\nPor 🔥 R$ 88\n\n✔️ CUPOM: RESGATEMELI\n\n🔗 https://mercadolivre.com/sec/16UzbXF",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_872555-MLA81564213780_012025-O.webp"
+        "text": "⚡️ TUDO EM UM APARELHO!!\n\nProjetor Smart Portátil Several\n\nDe ❌ R$ 299\nPor 🔥 R$ 163\n\n✔️ CUPOM: VALEDEZ\n\n🔗 https://mercadolivre.com/sec/13iV6wc",
+        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_752031-MLA97933964606_112025-O.webp"
       },
       "userId": 8417227551,
       "username": "NascimentoClara",
-      "createdAt": "2025-12-18T13:20:00.405Z",
-      "scheduledAt": "2025-12-18T13:36:52.932Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766064013352_pu4fwcqw4",
-      "ad": {
-        "text": "🛏️ Kit 10 Cuecas Boxer Microfibra Adulto\n\nDe ❌ R$ 129\nPor 🔥 R$ 55\n\n✔️ CUPOM: RESGATEMELI\n Para compras acima de R$79\n\n🔗 https://mercadolivre.com/sec/2qtKD44",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_764265-MLB95975419796_102025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T13:20:13.352Z",
-      "scheduledAt": "2025-12-18T13:41:52.932Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766075173708_xvxdg8aiq",
-      "ad": {
-        "text": "🏠 Tapete Passadeira 2,00x0,60 Quarto Pé Cama\n\nDe ❌ R$ 78\nPor 🔥 R$ 32\n\n✔️ CUPOM: RESGATEMELI\n Para compras acima de R$79\n\n🔗 https://mercadolivre.com/sec/2Vv3BT6",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_668827-MLB93769055804_102025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T16:26:13.708Z",
-      "scheduledAt": "2025-12-18T16:29:13.708Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766075262252_jl1zrbgt2",
-      "ad": {
-        "text": "👕 Kit 2 Camisetas Oversized Masculina Texturizado\n\nDe ❌ R$ 159\nPor 🔥 R$ 76\n\n🔗 https://mercadolivre.com/sec/2RtbN2o",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_677585-MLB93431900652_092025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T16:27:42.252Z",
-      "scheduledAt": "2025-12-18T16:34:13.708Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766075294163_2tf952zy4",
-      "ad": {
-        "text": "📱 Notebook Positivo Vision C14 Lumina Bar\n\nDe ❌ R$ 1799\nPor 🔥 R$ 1299\n\n🔗 https://mercadolivre.com/sec/1FWo9zp",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_637616-MLA99728363367_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T16:28:14.163Z",
-      "scheduledAt": "2025-12-18T16:39:13.708Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766075310627_5lrthbl7d",
-      "ad": {
-        "text": "⚡️ Depilador Philco 4 Acessórios Corpo Rosto\n\nDe ❌ R$ 183\nPor 🔥 R$ 111\n\n✔️ CUPOM: RESGATEMELI\n\n🔗 https://mercadolivre.com/sec/2KP2HXs",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_612962-MLA84850742497_052025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T16:28:30.627Z",
-      "scheduledAt": "2025-12-18T16:44:13.708Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766075333227_vvrt3fd82",
-      "ad": {
-        "text": "👕 Kit 6 Bermuda Shorts Moletom Masculino\n\nDe ❌ R$ 107\nPor 🔥 R$ 80\n\n✔️ CUPOM: RESGATEMELI\n\n🔗 https://mercadolivre.com/sec/1bRE2yj",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_742395-MLB88247116424_072025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T16:28:53.227Z",
-      "scheduledAt": "2025-12-18T16:49:13.708Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766075345584_l668csxdl",
-      "ad": {
-        "text": "🍳 Kit Cozinha Mondial Liquidificador Batedeira Espremedor\n\nDe ❌ R$ 452\nPor 🔥 R$ 294\n\n🔗 https://mercadolivre.com/sec/1gxvUR2",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_863730-MLA99506481276_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T16:29:05.584Z",
-      "scheduledAt": "2025-12-18T16:54:13.708Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766075354027_sy6apzn4t",
-      "ad": {
-        "text": "👜 Bolsa Feminina Phase Small Sports Alça\n\nDe ❌ R$ 209\nPor 🔥 R$ 159\n\n🔗 https://mercadolivre.com/sec/2sBMaG4",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_972259-MLA99998688341_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T16:29:14.027Z",
-      "scheduledAt": "2025-12-18T16:59:13.708Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766075389800_9c2l2cr4e",
-      "ad": {
-        "text": "⚡️ Smart Tv 50 Aoc 4k Dled\n\nDe ❌ R$ 2499\nPor 🔥 R$ 1573\n\n✔️ CUPOM: VEMCOMTUDO\n\n🔗 https://mercadolivre.com/sec/16csvxR",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_648316-MLA99473453820_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T16:29:49.800Z",
-      "scheduledAt": "2025-12-18T17:04:13.708Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090667988_8uqouo05x",
-      "ad": {
-        "text": "⚡️ Porta Condimentos Temperos Giratório 9 Potes\n\nDe ❌ R$ 59\nPor 🔥 R$ 32\n\n✔️ CUPOM: VEMCOMTUDO\n Para compras acima de R$79\n\n🔗 https://mercadolivre.com/sec/2cfgU3p",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_779927-MLB82401452611_022025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:44:27.988Z",
-      "scheduledAt": "2025-12-18T20:47:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090685017_rmay5alkg",
-      "ad": {
-        "text": "⚡️ Fritadeira Ar Petit Fry Elétrica 3\\.7l\n\nDe ❌ R$ 264\nPor 🔥 R$ 143\n\n✔️ CUPOM: VEMCOMTUDO\n\n🔗 https://mercadolivre.com/sec/1h3GWj7",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_703635-MLA99505102450_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:44:45.017Z",
-      "scheduledAt": "2025-12-18T20:52:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090724959_5yoarcmuf",
-      "ad": {
-        "text": "⚡️ Carregador Solar 20w Turbo Placa Painel\n\nDe ❌ R$ 199\nPor 🔥 R$ 119\n\n🔗 https://mercadolivre.com/sec/1GxCntq",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_795424-MLA99944871169_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:45:24.959Z",
-      "scheduledAt": "2025-12-18T20:57:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090756375_m2r6t0rw5",
-      "ad": {
-        "text": "👟 Tênis Puma Urbano Lifestyle Streetwear Antiderrapante\n\nDe ❌ R$ 399\nPor 🔥 R$ 257\n\n🔗 https://mercadolivre.com/sec/1K8o9da",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_901674-MLB95387985768_102025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:45:56.375Z",
-      "scheduledAt": "2025-12-18T21:02:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090771592_8rminyn3x",
-      "ad": {
-        "text": "⌚️ Smartwatch Huawei Band 10 Caixa Polímeros\n\nDe ❌ R$ 659\nPor 🔥 R$ 299\n\n🔗 https://mercadolivre.com/sec/1XDth4e",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_772291-MLA100008466405_122025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:46:11.592Z",
-      "scheduledAt": "2025-12-18T21:07:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090784677_ix938fs8x",
-      "ad": {
-        "text": "⚡️ Carregador Portátil 20000 Turbo 22\\.5w Power\n\nDe ❌ R$ 165\nPor 🔥 R$ 96\n\n🔗 https://mercadolivre.com/sec/29sjwyE",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_614937-MLA96889123348_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:46:24.677Z",
-      "scheduledAt": "2025-12-18T21:12:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090820227_drbvt2rso",
-      "ad": {
-        "text": "🏠 Kit Toalhas Banho 3 Peças Dimer\n\nDe ❌ R$ 139\nPor 🔥 R$ 64\n\n🔗 https://mercadolivre.com/sec/2kCbJvd",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_840147-MLA95693053808_102025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:47:00.227Z",
-      "scheduledAt": "2025-12-18T21:17:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090901169_42dgcsfgb",
-      "ad": {
-        "text": "⚡️ Árvore Natal Luxo Pinheiro Neve Pinheiro\n\nDe ❌ R$ 498\nPor 🔥 R$ 178\n\n🔗 https://mercadolivre.com/sec/1oBCfRC",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_749503-MLB98043744943_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:48:21.169Z",
-      "scheduledAt": "2025-12-18T21:22:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090956792_s6owqudpy",
-      "ad": {
-        "text": "⚡️ Kit Condor Feminino Elegante Dourado Co2035nie/k4f\n\nDe ❌ R$ 299\nPor 🔥 R$ 179\n\n🔗 https://mercadolivre.com/sec/1vs8pRm",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_638402-MLB98745943407_112025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:49:16.792Z",
-      "scheduledAt": "2025-12-18T21:27:27.988Z",
-      "status": "posted"
-    },
-    {
-      "id": "ad_1766090980373_desp873ga",
-      "ad": {
-        "text": "⚡️ Kit 9 Pares Meias Puma Sapatilha\n\nDe ❌ R$ 199\nPor 🔥 R$ 39\n\n✔️ CUPOM: VEMCOMTUDO\n\n🔗 https://mercadolivre.com/sec/2Fhmoj1",
-        "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_872253-MLB96642336275_102025-O.webp"
-      },
-      "userId": 8417227551,
-      "username": "NascimentoClara",
-      "createdAt": "2025-12-18T20:49:40.373Z",
-      "scheduledAt": "2025-12-18T21:32:27.988Z",
+      "createdAt": "2026-01-07T17:54:14.548Z",
+      "scheduledAt": "2026-01-07T18:27:00.358Z",
       "status": "posted"
     }
   ],
   "config": {
-    "intervalMinutes": 5,
+    "intervalMinutes": 15,
     "isPaused": false,
     "maxQueueSize": 50
   }

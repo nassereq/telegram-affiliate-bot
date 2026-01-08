@@ -6,7 +6,7 @@ import * as path from "path";
 class PostQueueService {
   private queue: QueuedAd[] = [];
   private config: QueueConfig = {
-    intervalMinutes: 15, // ⬅️ ALTERADO: de 5 para 15 minutos
+    intervalMinutes: 10, // ⬅️ ALTERADO: de 15 para 10 minutos
     isPaused: false,
     maxQueueSize: 50,
   };
